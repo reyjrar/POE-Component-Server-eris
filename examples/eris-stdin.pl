@@ -1,13 +1,12 @@
 #!/usr/bin/env perl
 #
+# Example Implementation for using with STDIN
 
 use strict;
 use warnings;
 
 
 # POE System
-use EV;
-sub POE::Kernel::ASSERT_DEFAULT { 1; };
 use POE qw(
 	Wheel::ReadWrite
 	Component::Server::eris
@@ -30,7 +29,6 @@ POE::Session->create(
 		},
 );
 
-#--------------------------------------------------------------------------#
 
 #--------------------------------------------------------------------------#
 # POE Main Loop
@@ -41,9 +39,7 @@ exit 0;
 
 #--------------------------------------------------------------------------#
 # POE Event Functions
-#--------------------------------------------------------------------------#
 
-#--------------------------------------------------------------------------#
 sub stream_start {
 	my ($kernel, $heap) = @_[KERNEL, HEAP];
 
@@ -61,9 +57,9 @@ sub stream_start {
 		ErrorEvent		=> 'stream_error',
 	);
 }
-
-
 #--------------------------------------------------------------------------#
+
+
 sub stream_line {
 	my ($kernel,$msg) = @_[KERNEL,ARG0];
 
@@ -72,11 +68,12 @@ sub stream_line {
 	$kernel->post( eris_dispatch => dispatch_message => $msg );
 
 }
-
 #--------------------------------------------------------------------------#
+
 sub stream_error {
 	my ($kernel) = $_[KERNEL];
 
 	debug("STREAM ERROR!!!!!!!!!!\n");
 	$kernel->call( eris_dispatcher => server_shutdown => 'Stream lost' );
 }
+#--------------------------------------------------------------------------#

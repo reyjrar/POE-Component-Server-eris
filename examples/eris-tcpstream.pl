@@ -4,14 +4,11 @@
 
 use strict;
 use warnings;
-
-use EV;
 use POE qw(
 	Component::Server::TCP
 	Component::Server::eris
 );
 
-#--------------------------------------------------------------------------#
 # POE Session Initialization
 
 # Eris Dispatcher
@@ -44,9 +41,7 @@ exit 0;
 
 #--------------------------------------------------------------------------#
 # POE Event Functions
-#--------------------------------------------------------------------------#
 
-#--------------------------------------------------------------------------#
 sub client_connect {
 	my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
 
@@ -56,21 +51,20 @@ sub client_connect {
 
 	$heap->{clients}{ $SID } = $heap->{client};
 }
-
 #--------------------------------------------------------------------------#
+
 sub client_input {
 	my ($kernel,$heap,$ses,$msg) = @_[KERNEL,HEAP,SESSION,ARG0];
 	my $sid = $ses->ID;
 
 	$kernel->post( $SESSION->{alias} => dispatch_message => $msg );
 }
-
 #--------------------------------------------------------------------------#
+
 sub client_term {
 	my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
 	my $sid = $ses->ID;
 
 	delete $heap->{clients}{$sid};
 }
-
 #--------------------------------------------------------------------------#
