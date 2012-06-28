@@ -1,6 +1,6 @@
 Revision History for POE-Component-Server-eris
 
-0.1		2011/11/17
-		Initial Release
+0.7     2012-06-28 Brad Lhotsky <brad@divisionbyzero.net>
+        - Fixed whitespace
+        - Updated dzil prefs
 
-  

@@ -8,6 +8,8 @@ use POE qw(
 
 # ABSTRACT: POE eris message dispatcher
 
+our $VERSION = '0.7';
+
 =head1 SYNOPSIS
 
 POE session for integration with your central logging infrastructure
@@ -24,7 +26,7 @@ rsyslog are included in the examples directory!
     my $SESSION = POE::Component::Server::eris->spawn(
 			ListenAddress		=> 'localhost',		 	#default
 			ListenPort			=> '9514',			 	#default
-	); 
+	);
 
 	# $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
 
@@ -35,7 +37,7 @@ rsyslog are included in the examples directory!
 		# An event will post incoming messages to:
 		# $poe_kernel->post( eris_dispatch => dispatch_message => $msg );
 		# 		 or
-		# $poe_kernel->post( $SESSION->{alias} => dispatch_message => $msg );	
+		# $poe_kernel->post( $SESSION->{alias} => dispatch_message => $msg );
     	...
 
 	);
@@ -46,7 +48,7 @@ rsyslog are included in the examples directory!
 
 POE::Component::Server::eris does not export any symbols.
 
-=cut 
+=cut
 
 # Precompiled Regular Expressions
 my %_PRE = (
@@ -82,14 +84,14 @@ sub spawn {
 			Alias		=> 'eris_client_server',
 			Address		=> $args{ListenAddress},
 			Port		=> $args{ListenPort},
-	
+
 			Error				=> \&server_error,
 			ClientConnected		=> \&client_connect,
 			ClientInput			=> \&client_input,
-	
+
 			ClientDisconnected	=> \&client_term,
 			ClientError			=> \&client_term,
-	
+
 			InlineStates		=> {
 				client_print		=> \&client_print,
 			},
@@ -171,7 +173,7 @@ sub dispatch_message {
 		# remove the sub process and PID from the program
 		$program =~ s/\(.*//g;
 		$program =~ s/\[.*//g;
-	
+
 		debug("DISPATCHING MESSAGE [$program]");
 
 		if( exists $heap->{subscribers}{$program} ) {
@@ -219,7 +221,7 @@ sub server_error {
 
 Client Registration for the dispatcher
 
-=cut 
+=cut
 
 sub register_client {
 	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
@@ -240,7 +242,7 @@ sub debug_client {
 	if( exists $heap->{full}{$sid} ) {  return;  }
 
 	$heap->{debug}{$sid} = 1;
-	$kernel->post( $sid => 'client_print' => 'Debugging enabled.' ); 
+	$kernel->post( $sid => 'client_print' => 'Debugging enabled.' );
 }
 #--------------------------------------------------------------------------#
 
@@ -255,7 +257,7 @@ sub nobug_client {
 
 	delete $heap->{debug}{$sid}
 		if exists $heap->{debug}{$sid};
-	$kernel->post( $sid => 'client_print' => 'Debugging disabled.' ); 
+	$kernel->post( $sid => 'client_print' => 'Debugging disabled.' );
 }
 #--------------------------------------------------------------------------#
 
@@ -415,7 +417,7 @@ Announce server shutdown, shut off PoCo::Server::TCP Session
 sub server_shutdown {
 	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
-	$kernel->call( eris_dispatch => 'broadcast' => 'SERVER DISCONNECTING: ' . $msg );	
+	$kernel->call( eris_dispatch => 'broadcast' => 'SERVER DISCONNECTING: ' . $msg );
 	$kernel->call( eris_client_server => 'shutdown' );
 	exit;
 }
@@ -481,7 +483,7 @@ Send debug message to DEBUG clients
 sub debug_message {
 	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
-	
+
 	foreach my $sid (keys %{ $heap->{debug} }) {
 		$kernel->post( $sid => client_print => '[debug] ' . $msg );
 	}
@@ -560,7 +562,7 @@ sub client_input {
 			#},
 		};
 	}
-	
+
 	#
 	# Check for messages:
 	my $handled = 0;
