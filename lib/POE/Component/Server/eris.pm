@@ -8,7 +8,7 @@ use POE qw(
 
 # ABSTRACT: POE eris message dispatcher
 
-our $VERSION = '0.7';
+our $VERSION = '0.8';
 
 =head1 SYNOPSIS
 
@@ -112,6 +112,8 @@ sub spawn {
 			server_shutdown			=> \&server_shutdown,
 			match_client			=> \&match_client,
 			nomatch_client			=> \&nomatch_client,
+            regex_client            => \&regex_client,
+            noregex_client          => \&noregex_client,
 			debug_client			=> \&debug_client,
 			nobug_client			=> \&nobug_client,
 			debug_message			=> \&debug_message,
@@ -164,8 +166,12 @@ Based on clients connected and their feed settings, distribute this message
 sub dispatch_message {
 	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
+
+    my %recv = ();
+
 	foreach my $sid ( keys %{ $heap->{full} } ) {
 		$kernel->post( $sid => 'client_print' => $msg );
+        $recv{$sid} = 1;
 	}
 
 	# Program based subscriptions
@@ -178,7 +184,9 @@ sub dispatch_message {
 
 		if( exists $heap->{subscribers}{$program} ) {
 			foreach my $sid (keys %{ $heap->{subscribers}{$program} }) {
+                next if exists $recv{$sid};
 				$kernel->post( $sid => client_print => $msg );
+                $recv{$sid} = 1;
 			}
 		}
 		else {
@@ -191,11 +199,27 @@ sub dispatch_message {
 		foreach my $word (keys %{ $heap->{match} } ) {
 			if( index( $msg, $word ) != -1 ) {
 				foreach my $sid ( keys %{ $heap->{match}{$word} } ) {
+                    next if exists $recv{$sid};
 					$kernel->post( $sid => client_print => $msg );
+                    $recv{$sid} = 1;
 				}
 			}
 		}
 	}
+
+	# Regex based subscriptions
+	if( keys %{ $heap->{regex} } ) {
+		foreach my $re (keys %{ $heap->{regex} } ) {
+			if( $msg =~ /$re/ ) {
+				foreach my $sid ( keys %{ $heap->{regex}{$re} } ) {
+                    next if $recv{$sid};
+					$kernel->post( $sid => client_print => $msg );
+                    $recv{$sid} = 1;
+				}
+			}
+		}
+	}
+    debug( "Dispatch message to " . scalar(keys %recv) . " clients.");
 }
 
 #--------------------------------------------------------------------------#
@@ -270,20 +294,26 @@ Adds requesting client to the list of full feed clients
 sub fullfeed_client {
 	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-	#
 	# Remove from normal subscribers.
 	foreach my $prog (keys %{ $heap->{subscribers} }) {
 		delete $heap->{subscribers}{$prog}{$sid}
 			if exists $heap->{subscribers}{$prog}{$sid};
 	}
 
-	#
+	# Remove from matches
+	foreach my $word (keys %{ $heap->{match} }) {
+		delete $heap->{match}{$word}{$sid}
+			if exists $heap->{match}{$word}{$sid};
+	}
+
+    # Remove Regex Subscriptions
+    $kernel->yield( noregex_client => $sid );
+
 	# Turn off DEBUG
 	if( exists $heap->{debug}{$sid} ) {
 		delete $heap->{debug}{$sid};
 	}
 
-	#
 	# Add to fullfeed:
 	$heap->{full}{$sid} = 1;
 
@@ -370,6 +400,57 @@ sub nomatch_client {
 	$kernel->post( $sid => 'client_print' => 'No longer receving messages matching : ' . join(', ', @words ) );
 }
 #--------------------------------------------------------------------------#
+
+=head3 regex_client
+
+Handle requests for string regexes from clients
+
+=cut
+
+sub regex_client {
+	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+
+	if( exists $heap->{full}{$sid} ) {  return;  }
+
+    my $regex = undef;
+    eval {
+        $regex = qr{$argstr};
+    };
+
+    if( defined $regex ) {
+        $heap->{regex}{$regex}{$sid} = 1;
+	    $kernel->post( $sid => 'client_print' => "Receiving messages matching regex : $argstr" );
+    }
+    else {
+	    $kernel->post( $sid => 'client_print' => "Invalid regular expression '$argstr', see perldoc perlre" );
+    }
+}
+#--------------------------------------------------------------------------#
+
+
+=head3 noregex_client
+
+Remove a match based feed from a client
+
+=cut
+
+sub noregex_client {
+	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+
+    foreach my $re ( keys %{ $heap->{regex} }) {
+		delete $heap->{regex}{$re}{$sid}
+		    if exists $heap->{regex}{$re}{$sid};
+
+        if( scalar(keys %{ $heap->{regex}{$re} }) == 0 ) {
+            delete $heap->{regex}{$re};
+            debug( "REGEX was removed from regex hash.");
+        }
+	}
+
+	$kernel->post( $sid => 'client_print' => 'No longer receving regex-based matches' );
+}
+#--------------------------------------------------------------------------#
+
 
 =head3 hangup_client
 
@@ -542,6 +623,18 @@ sub client_input {
 				re			=> qr/^(no(de)?bug)/i,
 				callback	=> sub {
 					$kernel->post( eris_dispatch => nobug_client => $sid, shift );
+				},
+			},
+            regex => {
+				re			=> qr/^re(gex)? (.*)/i,
+				callback	=> sub {
+					$kernel->post( eris_dispatch => regex_client => $sid, shift );
+				},
+            },
+			noregex 	=> {
+				re			=> qr/^nore(gex)? (.*)/i,
+				callback	=> sub {
+					$kernel->post( eris_dispatch => noregex_client => $sid );
 				},
 			},
 			#quit			=> {

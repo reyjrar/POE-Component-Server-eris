@@ -4,7 +4,7 @@ POE::Component::Server::eris - POE eris message dispatcher
 
 # VERSION
 
-version 0.7
+version 0.8
 
 # SYNOPSIS
 
@@ -102,6 +102,14 @@ Handle unsubscribe requests from clients
 Handle requests for string matching from clients
 
 ### nomatch\_client
+
+Remove a match based feed from a client
+
+### regex\_client
+
+Handle requests for string regexes from clients
+
+### noregex\_client
 
 Remove a match based feed from a client
 

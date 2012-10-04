@@ -1,5 +1,8 @@
 Revision History for POE-Component-Server-eris
 
+0.8     2012-10-04 Brad Lhotsky <brad@divisionbyzero.net>
+        - Added regex subscription option
+
 0.7     2012-06-28 Brad Lhotsky <brad@divisionbyzero.net>
         - Fixed whitespace
         - Updated dzil prefs
