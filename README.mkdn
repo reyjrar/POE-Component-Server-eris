@@ -14,32 +14,32 @@ from anything that can generate a POE Event.  Examples for syslog-ng and
 rsyslog are included in the examples directory!
 
     use POE qw(
-		Component::Server::TCP
-		Component::Server::eris
-	);
+        Component::Server::TCP
+        Component::Server::eris
+    );
 
-	# Message Dispatch Service
+    # Message Dispatch Service
     my $SESSION = POE::Component::Server::eris->spawn(
-			ListenAddress		=> 'localhost',		 	#default
-			ListenPort			=> '9514',			 	#default
-	);
+            ListenAddress       => 'localhost',         #default
+            ListenPort          => '9514',              #default
+    );
 
-	# $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
+    # $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
 
 
 
-	# Take Input from a TCP Socket
-	my $input_log_session_id = POE::Component::Server::TCP->spawn(
+    # Take Input from a TCP Socket
+    my $input_log_session_id = POE::Component::Server::TCP->spawn(
 
-		# An event will post incoming messages to:
-		# $poe_kernel->post( eris_dispatch => dispatch_message => $msg );
-		# 		 or
-		# $poe_kernel->post( $SESSION->{alias} => dispatch_message => $msg );
-    	...
+        # An event will post incoming messages to:
+        # $poe_kernel->post( eris_dispatch => dispatch_message => $msg );
+        #        or
+        # $poe_kernel->post( $SESSION->{alias} => dispatch_message => $msg );
+        ...
 
-	);
+    );
 
-	POE::Kernel->run();
+    POE::Kernel->run();
 
 # EXPORT
 
@@ -52,8 +52,8 @@ POE::Component::Server::eris does not export any symbols.
 Creates the POE::Session for the eris correlator.
 
 Parameters:
-	ListenAddress			=> 'localhost', 		\#default
-	ListenPort				=> '9514',		 		\#default
+    ListenAddress           => 'localhost',         \#default
+    ListenPort              => '9514',              \#default
 
 ## INTERNAL Subroutines (Events)
 

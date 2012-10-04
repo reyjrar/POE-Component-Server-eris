@@ -3,7 +3,7 @@ use warnings;
 package POE::Component::Server::eris;
 
 use POE qw(
-	Component::Server::TCP
+    Component::Server::TCP
 );
 
 # ABSTRACT: POE eris message dispatcher
@@ -18,31 +18,31 @@ from anything that can generate a POE Event.  Examples for syslog-ng and
 rsyslog are included in the examples directory!
 
     use POE qw(
-		Component::Server::TCP
-		Component::Server::eris
-	);
+        Component::Server::TCP
+        Component::Server::eris
+    );
 
-	# Message Dispatch Service
+    # Message Dispatch Service
     my $SESSION = POE::Component::Server::eris->spawn(
-			ListenAddress		=> 'localhost',		 	#default
-			ListenPort			=> '9514',			 	#default
-	);
+            ListenAddress       => 'localhost',         #default
+            ListenPort          => '9514',              #default
+    );
 
-	# $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
+    # $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
 
 
-	# Take Input from a TCP Socket
-	my $input_log_session_id = POE::Component::Server::TCP->spawn(
+    # Take Input from a TCP Socket
+    my $input_log_session_id = POE::Component::Server::TCP->spawn(
 
-		# An event will post incoming messages to:
-		# $poe_kernel->post( eris_dispatch => dispatch_message => $msg );
-		# 		 or
-		# $poe_kernel->post( $SESSION->{alias} => dispatch_message => $msg );
-    	...
+        # An event will post incoming messages to:
+        # $poe_kernel->post( eris_dispatch => dispatch_message => $msg );
+        #        or
+        # $poe_kernel->post( $SESSION->{alias} => dispatch_message => $msg );
+        ...
 
-	);
+    );
 
-	POE::Kernel->run();
+    POE::Kernel->run();
 
 =head1 EXPORT
 
@@ -52,7 +52,7 @@ POE::Component::Server::eris does not export any symbols.
 
 # Precompiled Regular Expressions
 my %_PRE = (
-	program => qr/\s+\d+:\d+:\d+\s+\S+\s+([^:\s]+)(:|\s)/,
+    program => qr/\s+\d+:\d+:\d+\s+\S+\s+([^:\s]+)(:|\s)/,
 );
 
 
@@ -63,64 +63,65 @@ my %_PRE = (
 Creates the POE::Session for the eris correlator.
 
 Parameters:
-	ListenAddress			=> 'localhost', 		#default
-	ListenPort				=> '9514',		 		#default
+    ListenAddress           => 'localhost',         #default
+    ListenPort              => '9514',              #default
 
 =cut
 
 sub spawn {
-	my $type = shift;
+    my $type = shift;
 
-	#
-	# Param Setup
-	my %args = (
-		ListenAddress	=> 'localhost',
-		ListenPort		=> 9514,
-		@_
-	);
+    #
+    # Param Setup
+    my %args = (
+        ListenAddress   => 'localhost',
+        ListenPort      => 9514,
+        @_
+    );
 
-	# TCP Session Master
-	my $tcp_sess_id = POE::Component::Server::TCP->new(
-			Alias		=> 'eris_client_server',
-			Address		=> $args{ListenAddress},
-			Port		=> $args{ListenPort},
+    # TCP Session Master
+    my $tcp_sess_id = POE::Component::Server::TCP->new(
+            Alias       => 'eris_client_server',
+            Address     => $args{ListenAddress},
+            Port        => $args{ListenPort},
 
-			Error				=> \&server_error,
-			ClientConnected		=> \&client_connect,
-			ClientInput			=> \&client_input,
+            Error               => \&server_error,
+            ClientConnected     => \&client_connect,
+            ClientInput         => \&client_input,
 
-			ClientDisconnected	=> \&client_term,
-			ClientError			=> \&client_term,
+            ClientDisconnected  => \&client_term,
+            ClientError         => \&client_term,
 
-			InlineStates		=> {
-				client_print		=> \&client_print,
-			},
-	);
+            InlineStates        => {
+                client_print        => \&client_print,
+            },
+    );
 
-	# Dispatcher Master Session
-	my $dispatch_id = POE::Session->create(
-		inline_states => {
-			_start					=> \&dispatcher_start,
-			_stop					=> sub { print "SESSION ", $_[SESSION]->ID, " stopped.\n"; },
-			register_client			=> \&register_client,
-			subscribe_client		=> \&subscribe_client,
-			unsubscribe_client		=> \&unsubscribe_client,
-			fullfeed_client			=> \&fullfeed_client,
-			dispatch_message		=> \&dispatch_message,
-			broadcast				=> \&broadcast,
-			hangup_client			=> \&hangup_client,
-			server_shutdown			=> \&server_shutdown,
-			match_client			=> \&match_client,
-			nomatch_client			=> \&nomatch_client,
+    # Dispatcher Master Session
+    my $dispatch_id = POE::Session->create(
+        inline_states => {
+            _start                  => \&dispatcher_start,
+            _stop                   => sub { print "SESSION ", $_[SESSION]->ID, " stopped.\n"; },
+            register_client         => \&register_client,
+            subscribe_client        => \&subscribe_client,
+            unsubscribe_client      => \&unsubscribe_client,
+            fullfeed_client         => \&fullfeed_client,
+            nofullfeed_client       => \&nofullfeed_client,
+            dispatch_message        => \&dispatch_message,
+            broadcast               => \&broadcast,
+            hangup_client           => \&hangup_client,
+            server_shutdown         => \&server_shutdown,
+            match_client            => \&match_client,
+            nomatch_client          => \&nomatch_client,
             regex_client            => \&regex_client,
             noregex_client          => \&noregex_client,
-			debug_client			=> \&debug_client,
-			nobug_client			=> \&nobug_client,
-			debug_message			=> \&debug_message,
-		},
-	);
+            debug_client            => \&debug_client,
+            nobug_client            => \&nobug_client,
+            debug_message           => \&debug_message,
+        },
+    );
 
-	return { alias => 'eris_dispatch' => ID => $dispatch_id };
+    return { alias => 'eris_dispatch' => ID => $dispatch_id };
 }
 
 =head2 INTERNAL Subroutines (Events)
@@ -132,10 +133,10 @@ Controls Debugging Output to the controlling terminal
 =cut
 
 sub debug {
-	my $msg = shift;
-	chomp($msg);
-	$poe_kernel->post( 'eris_dispatch' => 'debug_message' => $msg );
-	print "[debug] $msg\n";
+    my $msg = shift;
+    chomp($msg);
+    $poe_kernel->post( 'eris_dispatch' => 'debug_message' => $msg );
+    print "[debug] $msg\n";
 }
 #--------------------------------------------------------------------------#
 
@@ -146,14 +147,14 @@ Sets the alias and creates in-memory storages
 =cut
 
 sub dispatcher_start {
-	my ($kernel, $heap) = @_[KERNEL, HEAP];
+    my ($kernel, $heap) = @_[KERNEL, HEAP];
 
-	$kernel->alias_set( 'eris_dispatch' );
+    $kernel->alias_set( 'eris_dispatch' );
 
-	$heap->{subscribers} = { };
-	$heap->{full} = { };
-	$heap->{debug} = { };
-	$heap->{match} = { };
+    $heap->{subscribers} = { };
+    $heap->{full} = { };
+    $heap->{debug} = { };
+    $heap->{match} = { };
 }
 #--------------------------------------------------------------------------#
 
@@ -164,61 +165,63 @@ Based on clients connected and their feed settings, distribute this message
 =cut
 
 sub dispatch_message {
-	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
+    my %recv = ();      # Remember who received each message
 
-    my %recv = ();
-
-	foreach my $sid ( keys %{ $heap->{full} } ) {
-		$kernel->post( $sid => 'client_print' => $msg );
+    # Handle fullfeeds
+    foreach my $sid ( keys %{ $heap->{full} } ) {
+        $kernel->post( $sid => 'client_print' => $msg );
         $recv{$sid} = 1;
-	}
+    }
 
-	# Program based subscriptions
-	if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/) ) {
-		# remove the sub process and PID from the program
-		$program =~ s/\(.*//g;
-		$program =~ s/\[.*//g;
+    # Program based subscriptions
+    if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/) ) {
+        # remove the sub process and PID from the program
+        $program =~ s/\(.*//g;
+        $program =~ s/\[.*//g;
 
-		debug("DISPATCHING MESSAGE [$program]");
+        debug("DISPATCHING MESSAGE [$program]");
 
-		if( exists $heap->{subscribers}{$program} ) {
-			foreach my $sid (keys %{ $heap->{subscribers}{$program} }) {
+        if( exists $heap->{subscribers}{$program} ) {
+            foreach my $sid (keys %{ $heap->{subscribers}{$program} }) {
                 next if exists $recv{$sid};
-				$kernel->post( $sid => client_print => $msg );
+                $kernel->post( $sid => client_print => $msg );
                 $recv{$sid} = 1;
-			}
-		}
-		else {
-			debug("Message discarded, no listeners.");
-		}
-	}
+            }
+        }
+        else {
+            debug("Message discarded, no listeners.");
+        }
+    }
 
-	# Match based subscriptions
-	if( keys %{ $heap->{match} } ) {
-		foreach my $word (keys %{ $heap->{match} } ) {
-			if( index( $msg, $word ) != -1 ) {
-				foreach my $sid ( keys %{ $heap->{match}{$word} } ) {
+    # Match based subscriptions
+    if( keys %{ $heap->{match} } ) {
+        foreach my $word (keys %{ $heap->{match} } ) {
+            if( index( $msg, $word ) != -1 ) {
+                foreach my $sid ( keys %{ $heap->{match}{$word} } ) {
                     next if exists $recv{$sid};
-					$kernel->post( $sid => client_print => $msg );
+                    $kernel->post( $sid => client_print => $msg );
                     $recv{$sid} = 1;
-				}
-			}
-		}
-	}
+                }
+            }
+        }
+    }
 
-	# Regex based subscriptions
-	if( keys %{ $heap->{regex} } ) {
-		foreach my $re (keys %{ $heap->{regex} } ) {
-			if( $msg =~ /$re/ ) {
-				foreach my $sid ( keys %{ $heap->{regex}{$re} } ) {
+    # Regex based subscriptions
+    if( keys %{ $heap->{regex} } ) {
+        my %hit = ();
+        foreach my $sid (keys %{ $heap->{regex} } ) {
+            foreach my $re ( keys %{ $heap->{regex}{$sid} } ) {
+                if( $hit{$re} || $msg =~ /$re/ ) {
+                    $hit{$re} = 1;
                     next if $recv{$sid};
-					$kernel->post( $sid => client_print => $msg );
+                    $kernel->post( $sid => client_print => $msg );
                     $recv{$sid} = 1;
-				}
-			}
-		}
-	}
+                }
+            }
+        }
+    }
     debug( "Dispatch message to " . scalar(keys %recv) . " clients.");
 }
 
@@ -231,13 +234,13 @@ Handles errors related to the PoCo::TCP::Server
 =cut
 
 sub server_error {
-	my ($syscall_name, $err_num, $err_str) = @_[ARG0..ARG2];
-	debug( "SERVER ERROR: $syscall_name, $err_num, $err_str" );
+    my ($syscall_name, $err_num, $err_str) = @_[ARG0..ARG2];
+    debug( "SERVER ERROR: $syscall_name, $err_num, $err_str" );
 
-	if( $err_num == 98 ) {
-		# Address already in use, bail
-		$poe_kernel->stop();
-	}
+    if( $err_num == 98 ) {
+        # Address already in use, bail
+        $poe_kernel->stop();
+    }
 }
 #--------------------------------------------------------------------------#
 
@@ -248,9 +251,9 @@ Client Registration for the dispatcher
 =cut
 
 sub register_client {
-	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-	$heap->{clients}{$sid} = 1;
+    $heap->{clients}{$sid} = 1;
 }
 #--------------------------------------------------------------------------#
 
@@ -261,12 +264,12 @@ Enables debugging for the client requesting it
 =cut
 
 sub debug_client {
-	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-	if( exists $heap->{full}{$sid} ) {  return;  }
+    if( exists $heap->{full}{$sid} ) {  return;  }
 
-	$heap->{debug}{$sid} = 1;
-	$kernel->post( $sid => 'client_print' => 'Debugging enabled.' );
+    $heap->{debug}{$sid} = 1;
+    $kernel->post( $sid => 'client_print' => 'Debugging enabled.' );
 }
 #--------------------------------------------------------------------------#
 
@@ -277,11 +280,11 @@ Disables debugging for a particular client
 =cut
 
 sub nobug_client {
-	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-	delete $heap->{debug}{$sid}
-		if exists $heap->{debug}{$sid};
-	$kernel->post( $sid => 'client_print' => 'Debugging disabled.' );
+    delete $heap->{debug}{$sid}
+        if exists $heap->{debug}{$sid};
+    $kernel->post( $sid => 'client_print' => 'Debugging disabled.' );
 }
 #--------------------------------------------------------------------------#
 
@@ -292,32 +295,44 @@ Adds requesting client to the list of full feed clients
 =cut
 
 sub fullfeed_client {
-	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-	# Remove from normal subscribers.
-	foreach my $prog (keys %{ $heap->{subscribers} }) {
-		delete $heap->{subscribers}{$prog}{$sid}
-			if exists $heap->{subscribers}{$prog}{$sid};
-	}
+    # Remove from normal subscribers.
+    foreach my $prog (keys %{ $heap->{subscribers} }) {
+        delete $heap->{subscribers}{$prog}{$sid}
+            if exists $heap->{subscribers}{$prog}{$sid};
+    }
 
-	# Remove from matches
-	foreach my $word (keys %{ $heap->{match} }) {
-		delete $heap->{match}{$word}{$sid}
-			if exists $heap->{match}{$word}{$sid};
-	}
+    # Remove from matches
+    foreach my $word (keys %{ $heap->{match} }) {
+        delete $heap->{match}{$word}{$sid}
+            if exists $heap->{match}{$word}{$sid};
+    }
 
     # Remove Regex Subscriptions
     $kernel->yield( noregex_client => $sid );
 
-	# Turn off DEBUG
-	if( exists $heap->{debug}{$sid} ) {
-		delete $heap->{debug}{$sid};
-	}
+    # Turn off DEBUG
+    if( exists $heap->{debug}{$sid} ) {
+        delete $heap->{debug}{$sid};
+    }
 
-	# Add to fullfeed:
-	$heap->{full}{$sid} = 1;
+    # Add to fullfeed:
+    $heap->{full}{$sid} = 1;
 
-	$kernel->post( $sid => 'client_print' => 'Full feed enabled, all other functions disabled.');
+    $kernel->post( $sid => 'client_print' => 'Full feed enabled, all other functions disabled.');
+}
+#--------------------------------------------------------------------------#
+
+sub nofullfeed_client {
+    my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
+
+    # Turn off full
+    if( exists $heap->{full}{$sid} ) {
+        delete $heap->{full}{$sid};
+    }
+
+    $kernel->post( $sid => 'client_print' => 'Full feed disabled.');
 }
 #--------------------------------------------------------------------------#
 
@@ -328,16 +343,16 @@ Handle program name subscription
 =cut
 
 sub subscribe_client {
-	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+    my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-	if( exists $heap->{full}{$sid} ) {  return;  }
+    if( exists $heap->{full}{$sid} ) {  return;  }
 
-	my @progs = map { lc } split /[\s,]+/, $argstr;
-	foreach my $prog (@progs) {
-		$heap->{subscribers}{$prog}{$sid} = 1;
-	}
+    my @progs = map { lc } split /[\s,]+/, $argstr;
+    foreach my $prog (@progs) {
+        $heap->{subscribers}{$prog}{$sid} = 1;
+    }
 
-	$kernel->post( $sid => 'client_print' => 'Subscribed to : ' . join(', ', @progs ) );
+    $kernel->post( $sid => 'client_print' => 'Subscribed to : ' . join(', ', @progs ) );
 }
 #--------------------------------------------------------------------------#
 
@@ -348,14 +363,14 @@ Handle unsubscribe requests from clients
 =cut
 
 sub unsubscribe_client {
-	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+    my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-	my @progs = map { lc } split /[\s,]+/, $argstr;
-	foreach my $prog (@progs) {
-		delete $heap->{subscribers}{$prog}{$sid};
-	}
+    my @progs = map { lc } split /[\s,]+/, $argstr;
+    foreach my $prog (@progs) {
+        delete $heap->{subscribers}{$prog}{$sid};
+    }
 
-	$kernel->post( $sid => 'client_print' => 'Subscription removed for : ' . join(', ', @progs ) );
+    $kernel->post( $sid => 'client_print' => 'Subscription removed for : ' . join(', ', @progs ) );
 }
 #--------------------------------------------------------------------------#
 
@@ -366,16 +381,16 @@ Handle requests for string matching from clients
 =cut
 
 sub match_client {
-	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+    my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-	if( exists $heap->{full}{$sid} ) {  return;  }
+    if( exists $heap->{full}{$sid} ) {  return;  }
 
-	my @words = map { lc } split /[\s,]+/, $argstr;
-	foreach my $word (@words) {
-		$heap->{match}{$word}{$sid} = 1;
-	}
+    my @words = map { lc } split /[\s,]+/, $argstr;
+    foreach my $word (@words) {
+        $heap->{match}{$word}{$sid} = 1;
+    }
 
-	$kernel->post( $sid => 'client_print' => 'Receiving messages matching : ' . join(', ', @words ) );
+    $kernel->post( $sid => 'client_print' => 'Receiving messages matching : ' . join(', ', @words ) );
 }
 #--------------------------------------------------------------------------#
 
@@ -387,17 +402,17 @@ Remove a match based feed from a client
 =cut
 
 sub nomatch_client {
-	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+    my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-	my @words = map { lc } split /[\s,]+/, $argstr;
-	foreach my $word (@words) {
-		delete $heap->{match}{$word}{$sid};
-		# Remove the word from searching if this was the last client
-		delete $heap->{match}{$word} unless keys %{ $heap->{match}{$word} };
-	}
+    my @words = map { lc } split /[\s,]+/, $argstr;
+    foreach my $word (@words) {
+        delete $heap->{match}{$word}{$sid};
+        # Remove the word from searching if this was the last client
+        delete $heap->{match}{$word} unless keys %{ $heap->{match}{$word} };
+    }
 
 
-	$kernel->post( $sid => 'client_print' => 'No longer receving messages matching : ' . join(', ', @words ) );
+    $kernel->post( $sid => 'client_print' => 'No longer receving messages matching : ' . join(', ', @words ) );
 }
 #--------------------------------------------------------------------------#
 
@@ -408,21 +423,23 @@ Handle requests for string regexes from clients
 =cut
 
 sub regex_client {
-	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+    my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-	if( exists $heap->{full}{$sid} ) {  return;  }
+    if( exists $heap->{full}{$sid} ) {  return;  }
 
     my $regex = undef;
     eval {
-        $regex = qr{$argstr};
+        if (defined $argstr && length $argstr) {
+            $regex = qr{$argstr};
+        }
     };
 
     if( defined $regex ) {
-        $heap->{regex}{$regex}{$sid} = 1;
-	    $kernel->post( $sid => 'client_print' => "Receiving messages matching regex : $argstr" );
+        $heap->{regex}{$sid}{$regex} = 1;
+        $kernel->post( $sid => 'client_print' => "Receiving messages matching regex : $argstr" );
     }
     else {
-	    $kernel->post( $sid => 'client_print' => "Invalid regular expression '$argstr', see perldoc perlre" );
+        $kernel->post( $sid => 'client_print' => "Invalid regular expression '$argstr', see perldoc perlre" );
     }
 }
 #--------------------------------------------------------------------------#
@@ -435,19 +452,12 @@ Remove a match based feed from a client
 =cut
 
 sub noregex_client {
-	my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
+    my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-    foreach my $re ( keys %{ $heap->{regex} }) {
-		delete $heap->{regex}{$re}{$sid}
-		    if exists $heap->{regex}{$re}{$sid};
+    delete $heap->{regex}{$sid}
+        if exists $heap->{regex}{$sid};
 
-        if( scalar(keys %{ $heap->{regex}{$re} }) == 0 ) {
-            delete $heap->{regex}{$re};
-            debug( "REGEX was removed from regex hash.");
-        }
-	}
-
-	$kernel->post( $sid => 'client_print' => 'No longer receving regex-based matches' );
+    $kernel->post( $sid => 'client_print' => 'No longer receving regex-based matches' );
 }
 #--------------------------------------------------------------------------#
 
@@ -459,32 +469,32 @@ This handles cleaning up from a client disconnect
 =cut
 
 sub hangup_client {
-	my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-	delete $heap->{clients}{$sid};
+    delete $heap->{clients}{$sid};
 
-	foreach my $p ( keys %{ $heap->{subscribers} } ) {
-		delete $heap->{subscribers}{$p}{$sid}
-			if exists $heap->{subscribers}{$p}{$sid};
-	}
+    foreach my $p ( keys %{ $heap->{subscribers} } ) {
+        delete $heap->{subscribers}{$p}{$sid}
+            if exists $heap->{subscribers}{$p}{$sid};
+    }
 
-	foreach my $word ( keys %{ $heap->{match} } ) {
-		delete $heap->{match}{$word}{$sid}
-			if exists $heap->{match}{$word}{$sid};
-		# Remove the word from searching if this was the last client
-		delete $heap->{match}{$word} unless keys %{ $heap->{match}{$word} };
-	}
+    foreach my $word ( keys %{ $heap->{match} } ) {
+        delete $heap->{match}{$word}{$sid}
+            if exists $heap->{match}{$word}{$sid};
+        # Remove the word from searching if this was the last client
+        delete $heap->{match}{$word} unless keys %{ $heap->{match}{$word} };
+    }
 
 
-	if( exists $heap->{debug}{$sid} ) {
-		delete $heap->{debug}{$sid};
-	}
+    if( exists $heap->{debug}{$sid} ) {
+        delete $heap->{debug}{$sid};
+    }
 
-	if( exists $heap->{full}{$sid} ) {
-		delete $heap->{full}{$sid};
-	}
+    if( exists $heap->{full}{$sid} ) {
+        delete $heap->{full}{$sid};
+    }
 
-	debug("Client Termination Posted: $sid\n");
+    debug("Client Termination Posted: $sid\n");
 
 }
 #--------------------------------------------------------------------------#
@@ -496,11 +506,11 @@ Announce server shutdown, shut off PoCo::Server::TCP Session
 =cut
 
 sub server_shutdown {
-	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
-	$kernel->call( eris_dispatch => 'broadcast' => 'SERVER DISCONNECTING: ' . $msg );
-	$kernel->call( eris_client_server => 'shutdown' );
-	exit;
+    $kernel->call( eris_dispatch => 'broadcast' => 'SERVER DISCONNECTING: ' . $msg );
+    $kernel->call( eris_client_server => 'shutdown' );
+    exit;
 }
 #--------------------------------------------------------------------------#
 
@@ -511,18 +521,18 @@ PoCo::Server::TCP Client Establishment Code
 =cut
 
 sub client_connect {
-	my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
+    my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
 
-	my $KID = $kernel->ID();
-	my $CID = $heap->{client}->ID;
-	my $SID = $ses->ID;
+    my $KID = $kernel->ID();
+    my $CID = $heap->{client}->ID;
+    my $SID = $ses->ID;
 
-	$kernel->post( eris_dispatch => register_client => $SID );
+    $kernel->post( eris_dispatch => register_client => $SID );
 
-	$heap->{clients}{ $SID } = $heap->{client};
-	#
-	# Say hello to the client.
-	$heap->{client}->put( "EHLO Streamer (KERNEL: $KID:$SID)" );
+    $heap->{clients}{ $SID } = $heap->{client};
+    #
+    # Say hello to the client.
+    $heap->{client}->put( "EHLO Streamer (KERNEL: $KID:$SID)" );
 }
 
 #--------------------------------------------------------------------------#
@@ -534,9 +544,9 @@ PoCo::Server::TCP Write to Client
 =cut
 
 sub client_print {
-	my ($kernel,$heap,$ses,$mesg) = @_[KERNEL,HEAP,SESSION,ARG0];
+    my ($kernel,$heap,$ses,$mesg) = @_[KERNEL,HEAP,SESSION,ARG0];
 
-	$heap->{clients}{$ses->ID}->put($mesg);
+    $heap->{clients}{$ses->ID}->put($mesg);
 }
 #--------------------------------------------------------------------------#
 
@@ -547,11 +557,11 @@ PoCo::Server::TCP Broadcast Messages
 =cut
 
 sub broadcast {
-	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
-	foreach my $sid (keys %{ $heap->{clients} }) {
-		$kernel->post( $sid => 'client_print' => $msg );
-	}
+    foreach my $sid (keys %{ $heap->{clients} }) {
+        $kernel->post( $sid => 'client_print' => $msg );
+    }
 }
 #--------------------------------------------------------------------------#
 
@@ -562,12 +572,12 @@ Send debug message to DEBUG clients
 =cut
 
 sub debug_message {
-	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
 
-	foreach my $sid (keys %{ $heap->{debug} }) {
-		$kernel->post( $sid => client_print => '[debug] ' . $msg );
-	}
+    foreach my $sid (keys %{ $heap->{debug} }) {
+        $kernel->post( $sid => client_print => '[debug] ' . $msg );
+    }
 }
 #--------------------------------------------------------------------------#
 
@@ -578,99 +588,105 @@ Parse the Client Input for eris::dispatcher commands and enact those commands
 =cut
 
 sub client_input {
-	my ($kernel,$heap,$ses,$msg) = @_[KERNEL,HEAP,SESSION,ARG0];
-	my $sid = $ses->ID;
+    my ($kernel,$heap,$ses,$msg) = @_[KERNEL,HEAP,SESSION,ARG0];
+    my $sid = $ses->ID;
 
-	if( !exists $heap->{dispatch}{$sid} ) {
-		$heap->{dispatch}{$sid} = {
-			fullfeed		=> {
-				re			=> qr/^(fullfeed)/,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => fullfeed_client => $sid );
-				},
-			},
-			subscribe		=> {
-				re			=> qr/^sub(?:scribe)? (.*)/,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => subscribe_client => $sid, shift );
-				},
-			},
-			unsubscribe 	=> {
-				re			=> qr/^unsub(?:scribe)? (.*)/,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => unsubscribe_client => $sid, shift );
-				},
-			},
-			match 	=> {
-				re			=> qr/^match (.*)/i,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => match_client => $sid, shift );
-				},
-			},
-			nomatch 	=> {
-				re			=> qr/^nomatch (.*)/i,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => nomatch_client => $sid, shift );
-				},
-			},
-			debug 	=> {
-				re			=> qr/^(debug)/i,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => debug_client => $sid, shift );
-				},
-			},
-			nobug 	=> {
-				re			=> qr/^(no(de)?bug)/i,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => nobug_client => $sid, shift );
-				},
-			},
-            regex => {
-				re			=> qr/^re(gex)? (.*)/i,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => regex_client => $sid, shift );
-				},
+    if( !exists $heap->{dispatch}{$sid} ) {
+        $heap->{dispatch}{$sid} = {
+            fullfeed        => {
+                re          => qr/^(fullfeed)/,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => fullfeed_client => $sid );
+                },
             },
-			noregex 	=> {
-				re			=> qr/^nore(gex)? (.*)/i,
-				callback	=> sub {
-					$kernel->post( eris_dispatch => noregex_client => $sid );
-				},
-			},
-			#quit			=> {
-			#	re			=> qr/(exit)|q(uit)?/,
-			#	callback	=> sub {
-			#			$kernel->post( $sid => 'client_print' => 'Terminating connection on your request.');
-			#			$kernel->post( $sid => 'shutdown' );
-			#	},
-			#},
-			#status			=> {
-			#	re			=> qr/^status/,
-			#	callback	=> sub {
-			#		my $cnt = scalar( keys %{ $heap->{clients} } );
-			#		my $subcnt = scalar( keys %{ $heap->{subscribers} });
-			#		my $msg = "Currently $cnt connections, $subcnt subscribed.";
-			#		$kernel->post( $sid, 'client_print', $msg );
-			#	},
-			#},
-		};
-	}
+            nofullfeed      => {
+                re          => qr/^nofull(feed)?/,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => nofullfeed_client => $sid );
+                },
+            },
+            subscribe       => {
+                re          => qr/^sub(?:scribe)? (.*)/,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => subscribe_client => $sid, shift );
+                },
+            },
+            unsubscribe     => {
+                re          => qr/^unsub(?:scribe)? (.*)/,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => unsubscribe_client => $sid, shift );
+                },
+            },
+            match   => {
+                re          => qr/^match (.*)/i,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => match_client => $sid, shift );
+                },
+            },
+            nomatch     => {
+                re          => qr/^nomatch (.*)/i,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => nomatch_client => $sid, shift );
+                },
+            },
+            debug   => {
+                re          => qr/^(debug)/i,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => debug_client => $sid, shift );
+                },
+            },
+            nobug   => {
+                re          => qr/^(no(de)?bug)/i,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => nobug_client => $sid, shift );
+                },
+            },
+            regex => {
+                re          => qr/^re(?:gex)? (.*)/i,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => regex_client => $sid, shift );
+                },
+            },
+            noregex     => {
+                re          => qr/^nore(gex)?/i,
+                callback    => sub {
+                    $kernel->post( eris_dispatch => noregex_client => $sid );
+                },
+            },
+            #quit           => {
+            #   re          => qr/(exit)|q(uit)?/,
+            #   callback    => sub {
+            #           $kernel->post( $sid => 'client_print' => 'Terminating connection on your request.');
+            #           $kernel->post( $sid => 'shutdown' );
+            #   },
+            #},
+            #status         => {
+            #   re          => qr/^status/,
+            #   callback    => sub {
+            #       my $cnt = scalar( keys %{ $heap->{clients} } );
+            #       my $subcnt = scalar( keys %{ $heap->{subscribers} });
+            #       my $msg = "Currently $cnt connections, $subcnt subscribed.";
+            #       $kernel->post( $sid, 'client_print', $msg );
+            #   },
+            #},
+        };
+    }
 
-	#
-	# Check for messages:
-	my $handled = 0;
-	my $dispatch = $heap->{dispatch}{$sid};
-	foreach my $evt ( keys %{ $dispatch } ) {
-		if( my($args) = ($msg =~ /$dispatch->{$evt}{re}/)) {
-			$handled = 1;
-			$dispatch->{$evt}{callback}->($args);
-			last;
-		}
-	}
+    #
+    # Check for messages:
+    my $handled = 0;
+    my $dispatch = $heap->{dispatch}{$sid};
+    foreach my $evt ( keys %{ $dispatch } ) {
+        if( my($args) = ($msg =~ /$dispatch->{$evt}{re}/)) {
+            $handled = 1;
+            $dispatch->{$evt}{callback}->($args);
+            last;
+        }
+    }
 
-	if( !$handled ) {
-		$kernel->post( $sid => client_print => 'UNKNOWN COMMAND, Ignored.' );
-	}
+    if( !$handled ) {
+        $kernel->post( $sid => client_print => 'UNKNOWN COMMAND, Ignored.' );
+    }
 }
 #--------------------------------------------------------------------------#
 
@@ -681,13 +697,13 @@ PoCo::Server::TCP Client Termination
 =cut
 
 sub client_term {
-	my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
-	my $sid = $ses->ID;
+    my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
+    my $sid = $ses->ID;
 
-	delete $heap->{dispatch}{$sid};
-	$kernel->post( eris_dispatch => hangup_client =>  $sid );
+    delete $heap->{dispatch}{$sid};
+    $kernel->post( eris_dispatch => hangup_client =>  $sid );
 
-	debug("SERVER, client $sid disconnected.\n");
+    debug("SERVER, client $sid disconnected.\n");
 }
 
 
