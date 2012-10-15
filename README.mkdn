@@ -4,7 +4,7 @@ POE::Component::Server::eris - POE eris message dispatcher
 
 # VERSION
 
-version 0.9
+version 1.0
 
 # SYNOPSIS
 
@@ -112,6 +112,14 @@ Handle requests for string regexes from clients
 ### noregex\_client
 
 Remove a match based feed from a client
+
+### status\_client
+
+Send current server statistics to client
+
+### dump\_client
+
+Dump something interesting to the client
 
 ### hangup\_client
 

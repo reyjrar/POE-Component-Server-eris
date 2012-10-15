@@ -41,7 +41,6 @@ exit 0;
 
 #--------------------------------------------------------------------------#
 # POE Event Functions
-
 sub client_connect {
 	my ($kernel,$heap,$ses) = @_[KERNEL,HEAP,SESSION];
 

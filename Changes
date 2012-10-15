@@ -1,4 +1,8 @@
 Revision History for POE-Component-Server-eris
+1.0     2012-10-15 Brad Lhotsky <brad@divisionbyzero.net>
+        - Added status and dump commands for debugging
+        - Fixed stream handling bugs
+
 0.9     2012-10-15 Brad Lhotsky <brad@divisionbyzero.net>
         - Fixed memory leak in regex matcher
 
