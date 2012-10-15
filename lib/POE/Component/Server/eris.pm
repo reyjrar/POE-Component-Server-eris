@@ -8,7 +8,7 @@ use POE qw(
     Component::Server::TCP
 );
 
-our $VERSION = '1.0';
+our $VERSION = '1.0.1';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -505,7 +505,12 @@ sub dump_client {
                 if( exists $heap->{$str} && ref $heap->{$str} eq 'HASH') {
                     my @sids = ();
                     foreach my $sid (keys %{$heap->{$str}}) {
-                        push @sids, "$sid:" . join(',', keys %{ $heap->{$str}{$sid} });
+                        if( ref $heap->{$str}{$sid} eq 'HASH' ) {
+                            push @sids, "$sid:" . join(',', keys %{ $heap->{$str}{$sid} });
+                        }
+                        else {
+                            push @sids, $sid;
+                        }
                     }
                     push @details, "$str -> " . join( "; ", @sids);
                 }
