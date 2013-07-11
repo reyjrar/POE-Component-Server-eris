@@ -1,4 +1,8 @@
 Revision History for POE-Component-Server-eris
+1.4     2012-10-15 Brad Lhotsky <brad@divisionbyzero.net>
+        - Dispatcher can dispatch in blocks of messages
+          - Patch by Mattia Barbon
+
 1.0.1   2012-10-15 Brad Lhotsky <brad@divisionbyzero.net>
         - Bug fix in dump
 

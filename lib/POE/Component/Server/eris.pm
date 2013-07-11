@@ -8,7 +8,7 @@ use POE qw(
     Component::Server::TCP
 );
 
-our $VERSION = '1.0.1';
+our $VERSION = '1.4';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -110,6 +110,7 @@ sub spawn {
             _stop                   => sub { print "SESSION ", $_[SESSION]->ID, " stopped.\n"; },
             debug_message           => \&debug_message,
             dispatch_message        => \&dispatch_message,
+            dispatch_messages       => \&dispatch_messages,
             broadcast               => \&broadcast,
             hangup_client           => \&hangup_client,
             register_client         => \&register_client,
@@ -126,6 +127,7 @@ sub spawn {
             nobug_client            => \&nobug_client,
             status_client           => \&status_client,
             dump_client             => \&dump_client,
+            flush_client            => \&flush_client,
         },
     );
 
@@ -158,6 +160,7 @@ sub dispatcher_start {
     my ($kernel, $heap) = @_[KERNEL, HEAP];
 
     $kernel->alias_set( 'eris_dispatch' );
+    $kernel->delay( flush_client => 0.1 );
 
     # Stream Storage
     foreach my $stream (@_STREAM_NAMES) {
@@ -169,6 +172,8 @@ sub dispatcher_start {
         my %store;
         $heap->{$assister} = \%store;
     }
+    # Output buffering
+    $heap->{buffers} = {};
 }
 #--------------------------------------------------------------------------#
 
@@ -181,47 +186,59 @@ Based on clients connected and their feed settings, distribute this message
 sub dispatch_message {
     my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
+    _dispatch_message($kernel, $heap, [$msg]);
+}
+
+sub dispatch_messages {
+    my ($kernel,$heap,$msgs) = @_[KERNEL,HEAP,ARG0];
+
+    _dispatch_messages($kernel, $heap, [split /\n/, $msgs])
+}
+
+sub _dispatch_messages {
+    my ($kernel,$heap,$msgs) = @_;
+
     # Handle fullfeeds
     foreach my $sid ( keys %{ $heap->{full} } ) {
-        $kernel->post( $sid => 'client_print' => $msg );
+        push @{ $heap->{buffers}{$sid} }, @$msgs;
     }
 
-    # Program based subscriptions
-    if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/) ) {
-        # remove the sub process and PID from the program
-        $program =~ s/\(.*//g;
-        $program =~ s/\[.*//g;
+    foreach my $msg ( @$msgs ) {
+        # Program based subscriptions
+        if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/) ) {
+            # remove the sub process and PID from the program
+            $program =~ s/\(.*//g;
+            $program =~ s/\[.*//g;
 
-        debug("DISPATCHING MESSAGE [$program]");
-
-        if( exists $heap->{programs}{$program} && $heap->{programs}{$program} > 0 ) {
-            foreach my $sid (keys %{ $heap->{subscribers} }) {
-                next unless exists $heap->{subscribers}{$sid}{$program};
-                $kernel->post( $sid => client_print => $msg );
-            }
-        }
-    }
-
-    # Match based subscriptions
-    if( keys %{ $heap->{words} } ) {
-        foreach my $word (keys %{ $heap->{words} } ) {
-            if( index( $msg, $word ) != -1 ) {
-                foreach my $sid ( keys %{ $heap->{match} } ) {
-                    next unless exists $heap->{match}{$sid}{$word};
-                    $kernel->post( $sid => client_print => $msg );
+            if( exists $heap->{programs}{$program} && $heap->{programs}{$program} > 0 ) {
+                foreach my $sid (keys %{ $heap->{subscribers} }) {
+                    next unless exists $heap->{subscribers}{$sid}{$program};
+                    push @{ $heap->{buffers}{$sid} }, $msg;
                 }
             }
         }
-    }
 
-    # Regex based subscriptions
-    if( keys %{ $heap->{regex} } ) {
-        my %hit = ();
-        foreach my $sid (keys %{ $heap->{regex} } ) {
-            foreach my $re ( keys %{ $heap->{regex}{$sid} } ) {
-                if( $hit{$re} || $msg =~ /$re/ ) {
-                    $hit{$re} = 1;
-                    $kernel->post( $sid => client_print => $msg );
+        # Match based subscriptions
+        if( keys %{ $heap->{words} } ) {
+            foreach my $word (keys %{ $heap->{words} } ) {
+                if( index( $msg, $word ) != -1 ) {
+                    foreach my $sid ( keys %{ $heap->{match} } ) {
+                        next unless exists $heap->{match}{$sid}{$word};
+                        push @{ $heap->{buffers}{$sid} }, $msg;
+                    }
+                }
+            }
+        }
+
+        # Regex based subscriptions
+        if( keys %{ $heap->{regex} } ) {
+            my %hit = ();
+            foreach my $sid (keys %{ $heap->{regex} } ) {
+                foreach my $re ( keys %{ $heap->{regex}{$sid} } ) {
+                    if( $hit{$re} || $msg =~ /$re/ ) {
+                        $hit{$re} = 1;
+                        push @{ $heap->{buffers}{$sid} }, $msg;
+                    }
                 }
             }
         }
@@ -257,6 +274,7 @@ sub register_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
     $heap->{clients}{$sid} = 1;
+    $heap->{buffers}{$sid} = [];
 }
 #--------------------------------------------------------------------------#
 
@@ -378,6 +396,21 @@ sub match_client {
 
     $kernel->post( $sid => 'client_print' => 'Receiving messages matching : ' . join(', ', @words ) );
 }
+#--------------------------------------------------------------------------#
+
+sub flush_client {
+    my ($kernel, $heap) = @_[KERNEL, HEAP];
+
+    $kernel->delay( flush_client => 0.1 );
+
+    foreach my $sid ( keys %{ $heap->{buffers} } ) {
+        my $msgs = $heap->{buffers}{$sid};
+
+        $kernel->post( $sid => 'client_print' => join "\n", @$msgs );
+        $heap->{buffers}{$sid} = [];
+    }
+}
+
 #--------------------------------------------------------------------------#
 
 
@@ -540,6 +573,7 @@ sub hangup_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
     delete $heap->{clients}{$sid};
+    delete $heap->{buffers}{$sid};
 
     remove_all_streams($heap,$sid);
 
@@ -834,12 +868,11 @@ L<http://search.cpan.org/dist/POE-Component-Server-eris>
 
 =head1 ACKNOWLEDGEMENTS
 
-=head1 COPYRIGHT & LICENSE
+=over 4
 
-Copyright 2007 Brad Lhotsky, all rights reserved.
+=item Mattia Barbon
 
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+=back
 
 =cut
 
