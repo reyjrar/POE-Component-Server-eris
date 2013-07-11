@@ -1,5 +1,8 @@
 Revision History for POE-Component-Server-eris
-1.4     2012-10-15 Brad Lhotsky <brad@divisionbyzero.net>
+1.5     2013-07-11 Brad Lhotsky <brad@divisionbyzero.net>
+        - Fix typo in message dispatch name
+
+1.4     2013-07-11 Brad Lhotsky <brad@divisionbyzero.net>
         - Dispatcher can dispatch in blocks of messages
           - Patch by Mattia Barbon
 

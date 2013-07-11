@@ -8,7 +8,7 @@ use POE qw(
     Component::Server::TCP
 );
 
-our $VERSION = '1.4';
+our $VERSION = '1.5';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -186,7 +186,7 @@ Based on clients connected and their feed settings, distribute this message
 sub dispatch_message {
     my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
-    _dispatch_message($kernel, $heap, [$msg]);
+    _dispatch_messages($kernel, $heap, [$msg]);
 }
 
 sub dispatch_messages {
