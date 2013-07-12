@@ -8,7 +8,7 @@ use POE qw(
     Component::Server::TCP
 );
 
-our $VERSION = '1.5';
+our $VERSION = '1.6';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -405,6 +405,8 @@ sub flush_client {
 
     foreach my $sid ( keys %{ $heap->{buffers} } ) {
         my $msgs = $heap->{buffers}{$sid};
+
+        next unless @$msgs > 0;
 
         $kernel->post( $sid => 'client_print' => join "\n", @$msgs );
         $heap->{buffers}{$sid} = [];

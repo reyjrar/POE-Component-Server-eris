@@ -4,7 +4,7 @@ POE::Component::Server::eris - POE eris message dispatcher
 
 # VERSION
 
-version 1.5
+version 1.6
 
 # SYNOPSIS
 

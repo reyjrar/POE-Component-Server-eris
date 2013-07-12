@@ -1,4 +1,7 @@
 Revision History for POE-Component-Server-eris
+1.6     2013-07-12 Brad Lhotsky <brad@divisionbyzero.net>
+        - Only flush client sockets if there's data waiting
+
 1.5     2013-07-11 Brad Lhotsky <brad@divisionbyzero.net>
         - Fix typo in message dispatch name
 
