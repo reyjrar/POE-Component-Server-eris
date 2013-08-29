@@ -1,4 +1,9 @@
 Revision History for POE-Component-Server-eris
+1.7     2013-08-29 Brad Lhotsky <brad@divisionbyzero.net>
+        - Added statistics tracking
+        - Can send statistics to graphite
+        - Debug mode now displays statistics
+
 1.6     2013-07-12 Brad Lhotsky <brad@divisionbyzero.net>
         - Only flush client sockets if there's data waiting
 

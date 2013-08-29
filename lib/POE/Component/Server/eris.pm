@@ -7,8 +7,10 @@ use warnings;
 use POE qw(
     Component::Server::TCP
 );
+use Sys::Hostname;
+use AnyEvent::Graphite;
 
-our $VERSION = '1.6';
+our $VERSION = '1.7';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -32,6 +34,9 @@ rsyslog are included in the examples directory!
     my $SESSION = POE::Component::Server::eris->spawn(
             ListenAddress       => 'localhost',         #default
             ListenPort          => '9514',              #default
+            GraphiteHost        => undef,               #default
+            GraphitePort        => 2003,                #default
+            GraphitePrefix      => 'eris.dispatcher',   #default
     );
 
     # $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
@@ -82,6 +87,8 @@ sub spawn {
     my %args = (
         ListenAddress   => 'localhost',
         ListenPort      => 9514,
+        GraphitePort    => 2003,
+        GraphitePrefix  => 'eris.dispatcher',
         @_
     );
 
@@ -128,6 +135,12 @@ sub spawn {
             status_client           => \&status_client,
             dump_client             => \&dump_client,
             flush_client            => \&flush_client,
+            graphite_connect        => \&graphite_connect,
+            stats                   => \&flush_stats,
+        },
+        heap => {
+            config   => \%args,
+            hostname => (split /\./, hostname)[0],
         },
     );
 
@@ -174,7 +187,68 @@ sub dispatcher_start {
     }
     # Output buffering
     $heap->{buffers} = {};
+
+    # Statistics Tracking
+    $kernel->yield( 'graphite_connect' ) if exists $heap->{config}{GraphiteHost};
+    $kernel->yield( 'stats' );
 }
+#--------------------------------------------------------------------------#
+
+=head3 graphite_connect
+
+Establish a connection to the graphite server
+
+=cut
+
+sub graphite_connect {
+    my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+    eval {
+        $heap->{_graphite} = AnyEvent::Graphite->new(
+            host => $heap->{config}{GraphiteHost},
+            port => $heap->{config}{GraphitePort},
+        );
+    };
+    if( my $err = $@ ) {
+        debug("Graphite server setup failed: $err");
+    }
+}
+
+#--------------------------------------------------------------------------#
+
+=head3 flush_stats
+
+Send statistics to the graphite server and the debug clients
+
+=cut
+
+sub flush_stats {
+    my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+    if (exists $heap->{stats}) {
+        my $stats = delete $heap->{stats};
+        if( exists $heap->{_graphite} && defined $heap->{_graphite} ) {
+            my $time = time();
+            foreach my $stat (keys %{ $stats }) {
+                my $metric = join('.', $heap->{config}{GraphitePrefix}, $heap->{hostname}, $stat);
+                eval {
+                    $heap->{_graphite}->send("$metric", $stats->{$stat}, $time);
+                };
+                if( my $err = $@ ) {
+                    debug("Error sending statistics, reconnecting.");
+                    $kernel->yield('graphite_connect');
+                    last;
+                }
+            }
+        }
+        debug("STATS: " . join(", ", map { "$_:$stats->{$_}" } keys %{ $stats } ) ); #"
+    }
+    $heap->{stats} = {
+        map { $_ => 0 } qw(received received_bytes dispatched dispatched_bytes)
+    };
+    $kernel->delay_add( stats => 60 );
+}
+
 #--------------------------------------------------------------------------#
 
 =head3 dispatch_message
@@ -198,12 +272,21 @@ sub dispatch_messages {
 sub _dispatch_messages {
     my ($kernel,$heap,$msgs) = @_;
 
+    my $dispatched = 0;
+    my $bytes = 0;
+
     # Handle fullfeeds
     foreach my $sid ( keys %{ $heap->{full} } ) {
         push @{ $heap->{buffers}{$sid} }, @$msgs;
+        $dispatched++;
+        $bytes += length $_ for @$msgs;
     }
 
     foreach my $msg ( @$msgs ) {
+        # Grab statitics;
+        $heap->{stats}{received}++;
+        $heap->{stats}{received_bytes} += length $msg;
+
         # Program based subscriptions
         if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/) ) {
             # remove the sub process and PID from the program
@@ -214,6 +297,8 @@ sub _dispatch_messages {
                 foreach my $sid (keys %{ $heap->{subscribers} }) {
                     next unless exists $heap->{subscribers}{$sid}{$program};
                     push @{ $heap->{buffers}{$sid} }, $msg;
+                    $dispatched++;
+                    $bytes += length $msg;
                 }
             }
         }
@@ -225,6 +310,8 @@ sub _dispatch_messages {
                     foreach my $sid ( keys %{ $heap->{match} } ) {
                         next unless exists $heap->{match}{$sid}{$word};
                         push @{ $heap->{buffers}{$sid} }, $msg;
+                        $dispatched++;
+                        $bytes += length $msg;
                     }
                 }
             }
@@ -238,10 +325,17 @@ sub _dispatch_messages {
                     if( $hit{$re} || $msg =~ /$re/ ) {
                         $hit{$re} = 1;
                         push @{ $heap->{buffers}{$sid} }, $msg;
+                        $dispatched++;
+                        $bytes += length $msg;
                     }
                 }
             }
         }
+    }
+    # Report statistics for dispatched messages
+    if( $dispatched > 0 ) {
+        $heap->{stats}{dispatched} += $dispatched;
+        $heap->{stats}{dispatched_bytes} += $bytes;
     }
 }
 
@@ -531,6 +625,13 @@ sub dump_client {
                 if( exists $heap->{$asst} && ref $heap->{$asst} eq 'HASH') {
                     push @details, "$asst -> " . join(',', keys %{ $heap->{$asst} });
                 }
+            }
+            return @details;
+        },
+        stats => sub {
+            my @details = ();
+            foreach my $stat (keys %{ $heap->{stats} }) {
+                push @details, "$stat -> $heap->{stats}{$stat}";
             }
             return @details;
         },
