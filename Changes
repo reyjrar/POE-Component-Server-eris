@@ -1,4 +1,7 @@
 Revision History for POE-Component-Server-eris
+1.8     2013-08-29 Brad Lhotsky <brad@divisionbyzero.net>
+        - Bugfix for message counters
+
 1.7     2013-08-29 Brad Lhotsky <brad@divisionbyzero.net>
         - Added statistics tracking
         - Can send statistics to graphite

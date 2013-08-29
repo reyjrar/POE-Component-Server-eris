@@ -10,7 +10,7 @@ use POE qw(
 use Sys::Hostname;
 use AnyEvent::Graphite;
 
-our $VERSION = '1.7';
+our $VERSION = '1.8';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -278,7 +278,7 @@ sub _dispatch_messages {
     # Handle fullfeeds
     foreach my $sid ( keys %{ $heap->{full} } ) {
         push @{ $heap->{buffers}{$sid} }, @$msgs;
-        $dispatched++;
+        $dispatched += @$msgs;
         $bytes += length $_ for @$msgs;
     }
 
