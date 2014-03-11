@@ -66,6 +66,39 @@ my %_PRE = (
     program => qr/\s+\d+:\d+:\d+\s+\S+\s+([^:\s]+)(:|\s)/,
 );
 
+sub _benchmark_regex {
+    eval {
+        require Benchmark;
+    };
+    if( $@ ) {
+        warn "unable to load Benchmark.pm: $@";
+        return;
+    }
+    my @msgs = (
+        q|<11>Jan  1 00:00:00 mainfw snort[32640]: [1:1893:4] SNMP missing community string attempt [Classification: Misc Attack] [Priority: 2]: {UDP} 1.2.3.4:23210 -> 5.6.7.8:161|,
+        q|<11>Jan  1 00:00:00 11.22.33.44 dhcpd: DHCPINFORM from 172.16.2.137 via vlan3|,
+        q|Jan  1 00:00:00 11.22.33.44 dhcpd: DHCPINFORM from 172.16.2.137 via vlan3|,
+        q|<11>Jan  1 00:00:00 dev.example.com dhcpd: DHCPINFORM from 172.16.2.137 via vlan3|,
+        q|Jan  1 00:00:00 example syslogd 1.2.3: restart (remote reception).|,
+        q|<163>Jun 7 18:39:00 hostname.domain.tld %ASA-3-313001: Denied ICMP type=5, code=1 from 1.2.3.4 on interface inside|,
+    );
+    my %tests = ();
+    my %misses = ();
+    foreach my $re (keys %_PRE) {
+       $tests{$re} = sub {
+            for (@msgs) {
+                if( $_ !~ /$_PRE{$re}/ ) {
+                    $misses{"$re | $_"}=1;
+                }
+            }
+        };
+    }
+    Benchmark::cmpthese(500_000, \%tests);
+    if( keys %misses ) {
+        print "\nREGEX MISSES:\n\n";
+        print "  $_\n" for sort keys %misses;
+    }
+}
 
 =head1 FUNCTIONS
 
@@ -241,7 +274,7 @@ sub flush_stats {
                 }
             }
         }
-        debug("STATS: " . join(", ", map { "$_:$stats->{$_}" } keys %{ $stats } ) ); #"
+        debug('STATS: ' . join(', ', map { "$_:$stats->{$_}" } keys %{ $stats } ) );
     }
     $heap->{stats} = {
         map { $_ => 0 } qw(received received_bytes dispatched dispatched_bytes)
