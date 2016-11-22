@@ -5,10 +5,10 @@ use strict;
 use warnings;
 
 use POE qw(
+    Component::Client::TCP
     Component::Server::TCP
 );
 use Sys::Hostname;
-use AnyEvent::Graphite;
 
 our $VERSION = '1.8';
 
@@ -236,15 +236,37 @@ Establish a connection to the graphite server
 sub graphite_connect {
     my ($kernel,$heap) = @_[KERNEL,HEAP];
 
-    eval {
-        $heap->{_graphite} = AnyEvent::Graphite->new(
-            host => $heap->{config}{GraphiteHost},
-            port => $heap->{config}{GraphitePort},
-        );
-    };
-    if( my $err = $@ ) {
-        debug("Graphite server setup failed: $err");
-    }
+    # Build the Graphite Handler
+    $heap->{_graphite} = POE::Component::Client::TCP->new(
+        Alias => 'graphite',
+        RemoteHost => $heap->{config}{GraphiteHost},
+        RemotePort => $heap->{config}{GraphitePort},
+        ConnectTimeout => 5,
+        Connected => sub {
+            # let the parent know we're able to write
+            $heap->{graphite} = 1;
+        },
+        ConnectError => sub {
+            my ($op,$err_num,$err_str) = @_[ARG0..ARG2];
+            delete $heap->{graphite} if exists $heap->{graphite};
+            $heap->{stats}{graphite_errors} ||= 0;
+            $heap->{stats}{graphite_errors}++;
+            # Attempt to reconnect
+            $kernel->delay( reconnect => 60 );
+        },
+        Disconnected => sub {
+              $kernel->delay( reconnect => 60  );
+        },
+        Filter => "POE::Filter::Line",
+        InlineStates => {
+            send => sub {
+                $_[HEAP]->{server}->put($_[ARG0]);
+            },
+        },
+        ServerError => sub {
+            $_[KERNEL]->yield( 'reconnect' );
+        },
+    );
 }
 
 #--------------------------------------------------------------------------#
@@ -260,18 +282,11 @@ sub flush_stats {
 
     if (exists $heap->{stats}) {
         my $stats = delete $heap->{stats};
-        if( exists $heap->{_graphite} && defined $heap->{_graphite} ) {
+        if( exists $heap->{graphite} && $heap->{graphite} ) {
             my $time = time();
             foreach my $stat (keys %{ $stats }) {
                 my $metric = join('.', $heap->{config}{GraphitePrefix}, $heap->{hostname}, $stat);
-                eval {
-                    $heap->{_graphite}->send("$metric", $stats->{$stat}, $time);
-                };
-                if( my $err = $@ ) {
-                    debug("Error sending statistics, reconnecting.");
-                    $kernel->yield('graphite_connect');
-                    last;
-                }
+                $kernel->post( graphite => send => join " ", $metric, $stats->{$stat}, $time);
             }
         }
         debug('STATS: ' . join(', ', map { "$_:$stats->{$_}" } keys %{ $stats } ) );
