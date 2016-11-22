@@ -30,7 +30,6 @@ rsyslog are included in the examples directory!
     # $SESSION = { alias => 'eris_dispatcher', ID => POE::Session->ID };
 
 
-
     # Take Input from a TCP Socket
     my $input_log_session_id = POE::Component::Server::TCP->spawn(
 
@@ -55,8 +54,8 @@ POE::Component::Server::eris does not export any symbols.
 Creates the POE::Session for the eris correlator.
 
 Parameters:
-    ListenAddress           => 'localhost',         \#default
-    ListenPort              => '9514',              \#default
+    ListenAddress           => 'localhost',         #default
+    ListenPort              => '9514',              #default
 
 ## INTERNAL Subroutines (Events)
 
