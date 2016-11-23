@@ -4,7 +4,7 @@ POE::Component::Server::eris - POE eris message dispatcher
 
 # VERSION
 
-version 1.8
+version 1.9
 
 # SYNOPSIS
 
@@ -43,11 +43,7 @@ rsyslog are included in the examples directory!
 
     POE::Kernel->run();
 
-# EXPORT
-
-POE::Component::Server::eris does not export any symbols.
-
-# FUNCTIONS
+# METHODS
 
 ## spawn
 
@@ -57,164 +53,160 @@ Parameters:
     ListenAddress           => 'localhost',         #default
     ListenPort              => '9514',              #default
 
-## INTERNAL Subroutines (Events)
-
-### debug
-
-Controls Debugging Output to the controlling terminal
-
-### dispatcher\_start
-
-Sets the alias and creates in-memory storages
-
-### graphite\_connect
-
-Establish a connection to the graphite server
-
-### flush\_stats
-
-Send statistics to the graphite server and the debug clients
-
-### dispatch\_message
-
-Based on clients connected and their feed settings, distribute this message
-
-### server\_error
-
-Handles errors related to the PoCo::TCP::Server
-
-### register\_client
-
-Client Registration for the dispatcher
-
-### debug\_client
-
-Enables debugging for the client requesting it
-
-### nobug\_client
-
-Disables debugging for a particular client
-
-### fullfeed\_client
-
-Adds requesting client to the list of full feed clients
-
-### subscribe\_client
-
-Handle program name subscription
-
-### unsubscribe\_client
-
-Handle unsubscribe requests from clients
-
-### match\_client
-
-Handle requests for string matching from clients
-
-### nomatch\_client
-
-Remove a match based feed from a client
-
-### regex\_client
-
-Handle requests for string regexes from clients
-
-### noregex\_client
-
-Remove a match based feed from a client
-
-### status\_client
-
-Send current server statistics to client
-
-### dump\_client
-
-Dump something interesting to the client
-
-### hangup\_client
-
-This handles cleaning up from a client disconnect
-
-### server\_shutdown
-
-Announce server shutdown, shut off PoCo::Server::TCP Session
-
-### client\_connect
-
-PoCo::Server::TCP Client Establishment Code
-
-### client\_print
-
-PoCo::Server::TCP Write to Client
-
-### broadcast
-
-PoCo::Server::TCP Broadcast Messages
-
-### debug\_message
-
-Send debug message to DEBUG clients
-
-### client\_input
-
-Parse the Client Input for eris::dispatcher commands and enact those commands
-
-### client\_term
-
-PoCo::Server::TCP Client Termination
-
-# AUTHOR
-
-Brad Lhotsky, `<brad.lhotsky at gmail.com>`
-
-# BUGS
-
-Please report any bugs or feature requests to
-`bug-poe-component-server-eris at rt.cpan.org`, or through the web interface at
-[http://rt.cpan.org/NoAuth/ReportBug.html?Queue=POE-Component-Server-eris](http://rt.cpan.org/NoAuth/ReportBug.html?Queue=POE-Component-Server-eris).
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
-
-# SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc POE::Component::Server::eris
-
-You can also look for information at:
-
-- Github
-
-    [https://github.com/reyjrar/POE-Component-Server-eris](https://github.com/reyjrar/POE-Component-Server-eris)
-
-- AnnoCPAN: Annotated CPAN documentation
-
-    [http://annocpan.org/dist/POE-Component-Server-eris](http://annocpan.org/dist/POE-Component-Server-eris)
-
-- CPAN Ratings
-
-    [http://cpanratings.perl.org/d/POE-Component-Server-eris](http://cpanratings.perl.org/d/POE-Component-Server-eris)
-
-- RT: CPAN's request tracker
-
-    [http://rt.cpan.org/NoAuth/Bugs.html?Dist=POE-Component-Server-eris](http://rt.cpan.org/NoAuth/Bugs.html?Dist=POE-Component-Server-eris)
-
-- Search CPAN
-
-    [http://search.cpan.org/dist/POE-Component-Server-eris](http://search.cpan.org/dist/POE-Component-Server-eris)
-
 # ACKNOWLEDGEMENTS
 
 - Mattia Barbon
 
 # AUTHOR
 
-Brad Lhotsky <brad.lhotsky@gmail.com>
+Brad Lhotsky <brad@divsionbyzero.net>
 
 # COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2011 by Brad Lhotsky.
+This software is Copyright (c) 2016 by Brad Lhotsky.
 
 This is free software, licensed under:
 
     The (three-clause) BSD License
+
+# EVENTS
+
+## debug
+
+Controls Debugging Output to the controlling terminal
+
+## dispatcher\_start
+
+Sets the alias and creates in-memory storages
+
+## graphite\_connect
+
+Establish a connection to the graphite server
+
+## flush\_stats
+
+Send statistics to the graphite server and the debug clients
+
+## dispatch\_message
+
+Based on clients connected and their feed settings, distribute this message
+
+## dispatch\_messages
+
+Splits multiple messages by line feeds into many messages.
+
+## server\_error
+
+Handles errors related to the PoCo::TCP::Server
+
+## register\_client
+
+Client Registration for the dispatcher
+
+## debug\_client
+
+Enables debugging for the client requesting it
+
+## nobug\_client
+
+Disables debugging for a particular client
+
+## fullfeed\_client
+
+Adds requesting client to the list of full feed clients
+
+## nofullfeed\_client
+
+Disables the full feed from the requesting client.
+
+## subscribe\_client
+
+Handle program name subscription
+
+## unsubscribe\_client
+
+Handle unsubscribe requests from clients
+
+## match\_client
+
+Handle requests for string matching from clients
+
+## flush\_client
+
+Flushes the outstanding buffer to the client.
+
+## nomatch\_client
+
+Remove a match based feed from a client
+
+## regex\_client
+
+Handle requests for string regexes from clients
+
+## noregex\_client
+
+Remove a match based feed from a client
+
+## status\_client
+
+Send current server statistics to client
+
+## dump\_client
+
+Dump something interesting to the client
+
+## hangup\_client
+
+This handles cleaning up from a client disconnect
+
+## server\_shutdown
+
+Announce server shutdown, shut off PoCo::Server::TCP Session
+
+## client\_connect
+
+PoCo::Server::TCP Client Establishment Code
+
+## client\_print
+
+PoCo::Server::TCP Write to Client
+
+## broadcast
+
+PoCo::Server::TCP Broadcast Messages
+
+## debug\_message
+
+Send debug message to DEBUG clients
+
+## client\_input
+
+Parse the Client Input for eris::dispatcher commands and enact those commands
+
+## client\_term
+
+PoCo::Server::TCP Client Termination
+
+# SUPPORT
+
+## Websites
+
+The following websites have more information about this module, and may be of help to you. As always,
+in addition to those websites please use your favorite search engine to discover more resources.
+
+- MetaCPAN
+
+    A modern, open-source CPAN search engine, useful to view POD in HTML format.
+
+    [http://metacpan.org/release/POE-Component-Server-eris](http://metacpan.org/release/POE-Component-Server-eris)
+
+- RT: CPAN's Bug Tracker
+
+    The RT ( Request Tracker ) website is the default bug/issue tracking system for CPAN.
+
+    [https://rt.cpan.org/Public/Dist/Display.html?Name=POE-Component-Server-eris](https://rt.cpan.org/Public/Dist/Display.html?Name=POE-Component-Server-eris)
+
+## Source Code
+
+This module's source code is available by visiting:
+[https://github.com/reyjrar/POE-Component-Server-eris](https://github.com/reyjrar/POE-Component-Server-eris)

@@ -1,4 +1,8 @@
 Revision History for POE-Component-Server-eris
+1.9     2016-11-22 Brad Lhotsky <brad@divisionbyzero.net>
+        - Remove unnecessary dependencies of AnyEvent::Graphite
+        - Pod::Weaver and Perl::Critic the distribution.
+
 1.8     2013-08-29 Brad Lhotsky <brad@divisionbyzero.net>
         - Bugfix for message counters
 

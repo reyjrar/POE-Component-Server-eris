@@ -10,7 +10,7 @@ use POE qw(
 );
 use Sys::Hostname;
 
-our $VERSION = '1.8';
+our $VERSION = '1.9';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -55,10 +55,6 @@ rsyslog are included in the examples directory!
 
     POE::Kernel->run();
 
-=head1 EXPORT
-
-POE::Component::Server::eris does not export any symbols.
-
 =cut
 
 # Precompiled Regular Expressions
@@ -100,9 +96,8 @@ sub _benchmark_regex {
     }
 }
 
-=head1 FUNCTIONS
 
-=head2 spawn
+=method spawn
 
 Creates the POE::Session for the eris correlator.
 
@@ -180,9 +175,7 @@ sub spawn {
     return { alias => 'eris_dispatch' => ID => $dispatch_id };
 }
 
-=head2 INTERNAL Subroutines (Events)
-
-=head3 debug
+=event debug
 
 Controls Debugging Output to the controlling terminal
 
@@ -196,7 +189,7 @@ sub debug {
 }
 #--------------------------------------------------------------------------#
 
-=head3 dispatcher_start
+=event dispatcher_start
 
 Sets the alias and creates in-memory storages
 
@@ -227,7 +220,7 @@ sub dispatcher_start {
 }
 #--------------------------------------------------------------------------#
 
-=head3 graphite_connect
+=event graphite_connect
 
 Establish a connection to the graphite server
 
@@ -271,7 +264,7 @@ sub graphite_connect {
 
 #--------------------------------------------------------------------------#
 
-=head3 flush_stats
+=event flush_stats
 
 Send statistics to the graphite server and the debug clients
 
@@ -299,7 +292,7 @@ sub flush_stats {
 
 #--------------------------------------------------------------------------#
 
-=head3 dispatch_message
+=event dispatch_message
 
 Based on clients connected and their feed settings, distribute this message
 
@@ -310,6 +303,12 @@ sub dispatch_message {
 
     _dispatch_messages($kernel, $heap, [$msg]);
 }
+
+=event dispatch_messages
+
+Splits multiple messages by line feeds into many messages.
+
+=cut
 
 sub dispatch_messages {
     my ($kernel,$heap,$msgs) = @_[KERNEL,HEAP,ARG0];
@@ -389,7 +388,7 @@ sub _dispatch_messages {
 
 #--------------------------------------------------------------------------#
 
-=head3 server_error
+=event server_error
 
 Handles errors related to the PoCo::TCP::Server
 
@@ -406,7 +405,7 @@ sub server_error {
 }
 #--------------------------------------------------------------------------#
 
-=head3 register_client
+=event register_client
 
 Client Registration for the dispatcher
 
@@ -420,7 +419,7 @@ sub register_client {
 }
 #--------------------------------------------------------------------------#
 
-=head3 debug_client
+=event debug_client
 
 Enables debugging for the client requesting it
 
@@ -429,14 +428,14 @@ Enables debugging for the client requesting it
 sub debug_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-    remove_stream($heap,$sid,'full');
+    _remove_stream($heap,$sid,'full');
 
     $heap->{debug}{$sid} = 1;
     $kernel->post( $sid => 'client_print' => 'Debugging enabled.' );
 }
 #--------------------------------------------------------------------------#
 
-=head3 nobug_client
+=event nobug_client
 
 Disables debugging for a particular client
 
@@ -445,13 +444,13 @@ Disables debugging for a particular client
 sub nobug_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-    remove_stream($heap,$sid,'debug');
+    _remove_stream($heap,$sid,'debug');
 
     $kernel->post( $sid => 'client_print' => 'Debugging disabled.' );
 }
 #--------------------------------------------------------------------------#
 
-=head3 fullfeed_client
+=event fullfeed_client
 
 Adds requesting client to the list of full feed clients
 
@@ -460,7 +459,7 @@ Adds requesting client to the list of full feed clients
 sub fullfeed_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-    remove_all_streams($heap,$sid);
+    _remove_all_streams($heap,$sid);
 
     # Add to fullfeed:
     $heap->{full}{$sid} = 1;
@@ -469,16 +468,22 @@ sub fullfeed_client {
 }
 #--------------------------------------------------------------------------#
 
+=event nofullfeed_client
+
+Disables the full feed from the requesting client.
+
+=cut
+
 sub nofullfeed_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-    remove_all_streams($heap,$sid);
+    _remove_all_streams($heap,$sid);
 
     $kernel->post( $sid => 'client_print' => 'Full feed disabled.');
 }
 #--------------------------------------------------------------------------#
 
-=head3 subscribe_client
+=event subscribe_client
 
 Handle program name subscription
 
@@ -487,7 +492,7 @@ Handle program name subscription
 sub subscribe_client {
     my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-    remove_stream($heap,$sid,'full');
+    _remove_stream($heap,$sid,'full');
 
     my @progs = map { lc } split /[\s,]+/, $argstr;
     foreach my $prog (@progs) {
@@ -499,7 +504,7 @@ sub subscribe_client {
 }
 #--------------------------------------------------------------------------#
 
-=head3 unsubscribe_client
+=event unsubscribe_client
 
 Handle unsubscribe requests from clients
 
@@ -519,7 +524,7 @@ sub unsubscribe_client {
 }
 #--------------------------------------------------------------------------#
 
-=head3 match_client
+=event match_client
 
 Handle requests for string matching from clients
 
@@ -528,7 +533,7 @@ Handle requests for string matching from clients
 sub match_client {
     my ($kernel,$heap,$sid,$argstr) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-    remove_stream($heap,$sid,'full');
+    _remove_stream($heap,$sid,'full');
 
     my @words = map { lc } split /[\s,]+/, $argstr;
     foreach my $word (@words) {
@@ -539,6 +544,12 @@ sub match_client {
     $kernel->post( $sid => 'client_print' => 'Receiving messages matching : ' . join(', ', @words ) );
 }
 #--------------------------------------------------------------------------#
+
+=event flush_client
+
+Flushes the outstanding buffer to the client.
+
+=cut
 
 sub flush_client {
     my ($kernel, $heap) = @_[KERNEL, HEAP];
@@ -558,7 +569,7 @@ sub flush_client {
 #--------------------------------------------------------------------------#
 
 
-=head3 nomatch_client
+=event nomatch_client
 
 Remove a match based feed from a client
 
@@ -580,7 +591,7 @@ sub nomatch_client {
 }
 #--------------------------------------------------------------------------#
 
-=head3 regex_client
+=event regex_client
 
 Handle requests for string regexes from clients
 
@@ -609,7 +620,7 @@ sub regex_client {
 #--------------------------------------------------------------------------#
 
 
-=head3 noregex_client
+=event noregex_client
 
 Remove a match based feed from a client
 
@@ -618,14 +629,14 @@ Remove a match based feed from a client
 sub noregex_client {
     my ($kernel,$heap,$sid) = @_[KERNEL,HEAP,ARG0];
 
-    remove_stream($heap,$sid,'regex');
+    _remove_stream($heap,$sid,'regex');
 
     $kernel->post( $sid => 'client_print' => 'No longer receving regex-based matches' );
 }
 #--------------------------------------------------------------------------#
 
 
-=head3 status_client
+=event status_client
 
 Send current server statistics to client
 
@@ -657,7 +668,7 @@ sub status_client {
     $kernel->post( $sid, 'client_print', $msg );
 }
 
-=head3 dump_client
+=event dump_client
 
 Dump something interesting to the client
 
@@ -714,7 +725,7 @@ sub dump_client {
 
 
 
-=head3 hangup_client
+=event hangup_client
 
 This handles cleaning up from a client disconnect
 
@@ -726,14 +737,14 @@ sub hangup_client {
     delete $heap->{clients}{$sid};
     delete $heap->{buffers}{$sid};
 
-    remove_all_streams($heap,$sid);
+    _remove_all_streams($heap,$sid);
 
     debug("Client Termination Posted: $sid\n");
 
 }
 
 #--------------------------------------------------------------------------#
-sub remove_stream {
+sub _remove_stream {
     my ($heap,$sid,$stream) = @_;
 
     debug("Removing '$stream' for $sid");
@@ -751,16 +762,16 @@ sub remove_stream {
     }
 }
 
-sub remove_all_streams {
+sub _remove_all_streams {
     my ($heap,$sid) = @_;
 
     foreach my $stream (@_STREAM_NAMES) {
-        remove_stream($heap,$sid,$stream);
+        _remove_stream($heap,$sid,$stream);
     }
 }
 #--------------------------------------------------------------------------#
 
-=head3 server_shutdown
+=event server_shutdown
 
 Announce server shutdown, shut off PoCo::Server::TCP Session
 
@@ -775,7 +786,7 @@ sub server_shutdown {
 }
 #--------------------------------------------------------------------------#
 
-=head3 client_connect
+=event client_connect
 
 PoCo::Server::TCP Client Establishment Code
 
@@ -798,7 +809,7 @@ sub client_connect {
 
 #--------------------------------------------------------------------------#
 
-=head3 client_print
+=event client_print
 
 PoCo::Server::TCP Write to Client
 
@@ -811,7 +822,7 @@ sub client_print {
 }
 #--------------------------------------------------------------------------#
 
-=head3 broadcast
+=event broadcast
 
 PoCo::Server::TCP Broadcast Messages
 
@@ -826,7 +837,7 @@ sub broadcast {
 }
 #--------------------------------------------------------------------------#
 
-=head3 debug_message
+=event debug_message
 
 Send debug message to DEBUG clients
 
@@ -842,7 +853,7 @@ sub debug_message {
 }
 #--------------------------------------------------------------------------#
 
-=head3 client_input
+=event client_input
 
 Parse the Client Input for eris::dispatcher commands and enact those commands
 
@@ -954,7 +965,7 @@ sub client_input {
 }
 #--------------------------------------------------------------------------#
 
-=head3 client_term
+=event client_term
 
 PoCo::Server::TCP Client Termination
 
@@ -970,52 +981,6 @@ sub client_term {
     debug("SERVER, client $sid disconnected.\n");
 }
 
-
-#--------------------------------------------------------------------------#
-
-=head1 AUTHOR
-
-Brad Lhotsky, C<< <brad.lhotsky at gmail.com> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to
-C<bug-poe-component-server-eris at rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=POE-Component-Server-eris>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc POE::Component::Server::eris
-
-You can also look for information at:
-
-=over 4
-
-=item * Github
-
-L<https://github.com/reyjrar/POE-Component-Server-eris>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/POE-Component-Server-eris>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/POE-Component-Server-eris>
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=POE-Component-Server-eris>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/POE-Component-Server-eris>
-
-=back
 
 =head1 ACKNOWLEDGEMENTS
 
