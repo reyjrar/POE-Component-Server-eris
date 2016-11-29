@@ -17,20 +17,22 @@ daemon for most modern Linux distributions
 
 ## Setting up the eris dispatcher
 
-The eris-tcpstream.pl in the examples directory demonstrates one way to
+The eris-dispatcher-tcp.pl in the examples directory demonstrates one way to
 handle messages from rsyslog via it's TCP output module.  You may want to
-tweak the eris-tcpstream.pl script to handle errors and log various events.
+tweak the eris-dispatcher-tcp.pl script to handle errors and log various
+events.
 
-You'll need to start up the eris-tcpstream.pl server.  If you use a PID
+You'll need to start up the eris-dispatcher-tcp.pl server.  If you use a PID
 file, you can use something like monit to startup and maintain the
-eris-tcpstream.pl server.  It shouldn't crash, but if it does, we'll setup
-disk-assisted queues to make sure no event are dropped.
+eris-dispatcher-tcp.pl server.  It shouldn't crash, but if it does, we'll
+setup disk-assisted queues to make sure no event are dropped.
 
 ## Configuring rsyslog to work with eris
 
 If you've enabled central logging on your network with rsyslog and are using
-versions 4+, you're using rulesets to accomplish your remote loggers
-traffic.  You can read more about that [here](http://www.rsyslog.com/doc/multi_ruleset.html).
+versions 4+, you're using rulesets to accomplish your remote loggers traffic.
+You can read more about that
+[here](http://www.rsyslog.com/doc/multi_ruleset.html).
 
     # Remote Logging Profile
     $RuleSet remote
@@ -45,7 +47,7 @@ traffic.  You can read more about that [here](http://www.rsyslog.com/doc/multi_r
     *.info @@localhost:9513
 
 You can tweak the ports to send to your PoCo::Server::TCP Session's port for
-incoming syslog messages in eris-tcpstream.pl.
+incoming syslog messages in eris-dispatcher-tcp.pl.
 
 Once you restart rsyslog, you should be able to connect to your eris
 dispatch server and test:

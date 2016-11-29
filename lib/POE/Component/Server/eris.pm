@@ -10,12 +10,12 @@ use POE qw(
 );
 use Sys::Hostname;
 
-our $VERSION = '1.9';
+our $VERSION = '2.0';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
     subscribers => 'programs',
-    match => 'words',
+    match       => 'words',
 );
 
 =head1 SYNOPSIS
@@ -59,7 +59,7 @@ rsyslog are included in the examples directory!
 
 # Precompiled Regular Expressions
 my %_PRE = (
-    program => qr/\s+\d+:\d+:\d+\s+\S+\s+([^:\s]+)(:|\s)/,
+    program => qr/\d{1,2}:\d{1,2}:\d{1,2}(?:\.\d{3,})?(?:\+\d{1,2}:\d{1,2})?\s+\S+\s+([^:\s]+)(:|\s)/,
 );
 
 sub _benchmark_regex {
@@ -77,6 +77,7 @@ sub _benchmark_regex {
         q|<11>Jan  1 00:00:00 dev.example.com dhcpd: DHCPINFORM from 172.16.2.137 via vlan3|,
         q|Jan  1 00:00:00 example syslogd 1.2.3: restart (remote reception).|,
         q|<163>Jun 7 18:39:00 hostname.domain.tld %ASA-3-313001: Denied ICMP type=5, code=1 from 1.2.3.4 on interface inside|,
+        q|2016-11-29T06:30:01+01:00 ether CROND[15084]: (root) CMD (/usr/lib64/sa/sa1 1 1)|,
     );
     my %tests = ();
     my %misses = ();
@@ -248,7 +249,7 @@ sub graphite_connect {
             $kernel->delay( reconnect => 60 );
         },
         Disconnected => sub {
-              $kernel->delay( reconnect => 60  );
+            $kernel->delay( reconnect => 60  );
         },
         Filter => "POE::Filter::Line",
         InlineStates => {
@@ -335,7 +336,7 @@ sub _dispatch_messages {
         $heap->{stats}{received_bytes} += length $msg;
 
         # Program based subscriptions
-        if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/) ) {
+        if( my ($program) = map { lc } ($msg =~ /$_PRE{program}/o) ) {
             # remove the sub process and PID from the program
             $program =~ s/\(.*//g;
             $program =~ s/\[.*//g;

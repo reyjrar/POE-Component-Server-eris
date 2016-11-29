@@ -1,4 +1,9 @@
 Revision History for POE-Component-Server-eris
+2.0     2016-11-28 Brad Lhotsky <brad@divisionbyzero.net>
+        - Fix program matching regex to support ISO8601 Dates
+        - Optimize on the program matching regex
+        - Install the eris-dispatcher-{stdin,tcp}.pl
+
 1.9     2016-11-22 Brad Lhotsky <brad@divisionbyzero.net>
         - Remove unnecessary dependencies of AnyEvent::Graphite
         - Pod::Weaver and Perl::Critic the distribution.

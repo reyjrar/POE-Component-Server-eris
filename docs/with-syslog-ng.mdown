@@ -16,17 +16,18 @@ STDIN.
 
 ## eris dispatcher setup
 
-Check out the examples/ directory for the eris-stdin.pl example.  Slight
-modification may be necessary or desired to handle debugging events.
+Check out the examples/ directory for the eris-dispatcher-stdin.pl example.
+Slight modification may be necessary or desired to handle debugging events.
 
 ## syslog-ng setup
 
-Let's say we've installed examples/eris-stdin.pl to
-/usr/local/sbin/eris-stdin.pl.  In order to use the eris dispatch system
-with syslog-ng, we need to add a new destination declaration, I recommend:
+Let's say we've installed examples/eris-dispatcher-stdin.pl to
+/usr/local/sbin/eris-dispatcher-stdin.pl.  In order to use the eris dispatch
+system with syslog-ng, we need to add a new destination declaration, I
+recommend:
 
     destination d_eris {
-       program("/usr/local/sbin/eris-stdin.pl" template("<$PRI>$DATE $HOST $PROGRAM $MSG\n"));
+       program("/usr/local/sbin/eris-dispatcher-stdin.pl" template("<$PRI>$DATE $HOST $PROGRAM $MSG\n"));
     };
 
 Using this template, the priority and facility tags are forwarded along so
