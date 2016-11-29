@@ -15,7 +15,7 @@ daemon for most modern Linux distributions
  * RELP Support
  * Flexible Input and Output
 
-## Seetin up the eris dispatcher (stdin)
+## Setting up the eris dispatcher (stdin)
 
 The STDIN method has an advantage.  Rsyslog starts and stops the dispatcher,
 so you don't need to manage another service.  This is accomplished with the 
