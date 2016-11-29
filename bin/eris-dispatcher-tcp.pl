@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
-#
-# Example using POE::Component::Server::eris with a PoCo::Server::TCP Implementation
+# PODNAME: eris-dispatch-tcp.pl
+# ABSTRACT: Example using POE::Component::Server::eris with a PoCo::Server::TCP Implementation
 
 use strict;
 use warnings;

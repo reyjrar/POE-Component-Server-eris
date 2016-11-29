@@ -1,10 +1,9 @@
 #!/usr/bin/env perl
-#
-# Example Implementation for using with STDIN
+# PODNAME: eris-dispatcher-stdin.pl
+# ABSTRACT: Example Implementation for using with STDIN
 
 use strict;
 use warnings;
-
 
 # POE System
 use POE qw(
