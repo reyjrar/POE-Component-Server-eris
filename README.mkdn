@@ -4,7 +4,7 @@ POE::Component::Server::eris - POE eris message dispatcher
 
 # VERSION
 
-version 2.0
+version 2.1
 
 # SYNOPSIS
 
@@ -59,7 +59,7 @@ Parameters:
 
 # AUTHOR
 
-Brad Lhotsky &lt;brad@divsionbyzero.net>
+Brad Lhotsky <brad@divsionbyzero.net>
 
 # COPYRIGHT AND LICENSE
 
