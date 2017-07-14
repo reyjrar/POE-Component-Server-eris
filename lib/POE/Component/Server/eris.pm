@@ -10,7 +10,7 @@ use POE qw(
 );
 use Sys::Hostname;
 
-our $VERSION = '2.0';
+our $VERSION = '2.1';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -232,11 +232,11 @@ sub graphite_connect {
 
     # Build the Graphite Handler
     $heap->{_graphite} = POE::Component::Client::TCP->new(
-        Alias => 'graphite',
-        RemoteHost => $heap->{config}{GraphiteHost},
-        RemotePort => $heap->{config}{GraphitePort},
+        Alias          => 'graphite',
+        RemoteAddress  => $heap->{config}{GraphiteHost},
+        RemotePort     => $heap->{config}{GraphitePort},
         ConnectTimeout => 5,
-        Connected => sub {
+        Connected      => sub {
             # let the parent know we're able to write
             $heap->{graphite} = 1;
         },
@@ -256,6 +256,11 @@ sub graphite_connect {
             send => sub {
                 $_[HEAP]->{server}->put($_[ARG0]);
             },
+        },
+        ServerInput => sub {
+            # Shouldn't get any
+            $_[HEAP]->{stats}{graphite_feedback} ||= 0;
+            $_[HEAP]->{stats}{graphite_feedback}++;
         },
         ServerError => sub {
             $_[KERNEL]->yield( 'reconnect' );

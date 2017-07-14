@@ -59,7 +59,7 @@ Parameters:
 
 # AUTHOR
 
-Brad Lhotsky <brad@divsionbyzero.net>
+Brad Lhotsky &lt;brad@divsionbyzero.net>
 
 # COPYRIGHT AND LICENSE
 
