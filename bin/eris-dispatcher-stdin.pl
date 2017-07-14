@@ -21,7 +21,7 @@ my ($opt,$usage) = describe_options( '%c - %o',
     ['graphite-port|gp:i', "Port for graphite metric submission, default: 2003", {default => 2003} ],
     ['graphite-prefix:s',  "Graphite prefix for metrics, default from POE::Component::Server::eris"],
     [],
-    ['help'.       "Show this message and exit.", { shortcircuit => 1 } ],
+    ['help',       "Show this message and exit.", { shortcircuit => 1 } ],
 );
 
 if( $opt->help ) {

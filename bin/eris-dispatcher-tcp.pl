@@ -15,7 +15,7 @@ use POE qw(
 my ($opt,$usage) = describe_options( '%c - %o',
     ['syslog-listen|sl:s', "Address to listen for incoming syslog, default: 0.0.0.0", { default => '0.0.0.0' } ],
     ['syslog-port|sp:i',   "TCP port to listen for incoming syslog, default 514", { default => 514 } ],
-    []
+    [],
     ['eris-listen|el:s', "Address to listen for eris clients, default: 127.0.0.1", { default => '127.0.0.1' } ],
     ['eris-port|ep:i',   "TCP port to listen for incoming syslog, default 9514", { default => 9514 } ],
     [],
@@ -23,7 +23,7 @@ my ($opt,$usage) = describe_options( '%c - %o',
     ['graphite-port|gp:i', "Port for graphite metric submission, default: 2003", {default => 2003} ],
     ['graphite-prefix:s',  "Graphite prefix for metrics, default from POE::Component::Server::eris"],
     [],
-    ['help'.       "Show this message and exit.", { shortcircuit => 1 } ],
+    ['help',       "Show this message and exit.", { shortcircuit => 1 } ],
 );
 
 if( $opt->help ) {
@@ -35,7 +35,7 @@ if( $opt->help ) {
 # POE Session Initialization
 
 # Eris Server
-POE::Component::Server::eris->spawn(
+my $SESSION = POE::Component::Server::eris->spawn(
 		ListenAddress	=> $opt->eris_listen,
 		ListenPort		=> $opt->eris_port,
         GraphitePort    => $opt->graphite_port,
