@@ -1,4 +1,8 @@
 Revision History for POE-Component-Server-eris
+2.2     2017-07-15 Brad Lhotsky <brad@divisionbyzero.net>
+        - Minor performance optimizations in the regex
+          and program flow.
+
 2.1     2017-07-14 Brad Lhotsky <brad@divisionbyzero.net>
         - Make reference implementations usable with
           Getopt::Long::Descriptive
