@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!perl
 # PODNAME: eris-dispatch-tcp.pl
 # ABSTRACT: Example using POE::Component::Server::eris with a PoCo::Server::TCP Implementation
 

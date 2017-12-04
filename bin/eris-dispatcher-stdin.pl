@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!perl
 # PODNAME: eris-dispatcher-stdin.pl
 # ABSTRACT: Example Implementation for using with STDIN
 

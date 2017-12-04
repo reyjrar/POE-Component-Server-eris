@@ -10,7 +10,7 @@ use POE qw(
 );
 use Sys::Hostname qw(hostname);
 
-our $VERSION = '2.4';
+our $VERSION = '2.5';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
