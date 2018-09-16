@@ -10,7 +10,7 @@ use POE qw(
 );
 use Sys::Hostname qw(hostname);
 
-our $VERSION = '2.5';
+our $VERSION = '2.6';
 
 my @_STREAM_NAMES = qw(subscribers match debug full regex);
 my %_STREAM_ASSISTERS = (
@@ -54,6 +54,7 @@ rsyslog are included in the examples directory!
             GraphiteHost        => undef,               #default
             GraphitePort        => 2003,                #default
             GraphitePrefix      => 'eris.dispatcher',   #default
+            MaxLineLength       => 16384,               #default
     );
 
     # $SESSION = { alias => 'eris_dispatch', ID => POE::Session->ID };
@@ -126,11 +127,44 @@ sub _benchmark_regex {
 
 =method spawn
 
-Creates the POE::Session for the eris correlator.
+Creates the POE::Session for the eris message dispatcher.
 
 Parameters:
-    ListenAddress           => 'localhost',         #default
-    ListenPort              => '9514',              #default
+
+=over 2
+
+=item ListenAddress
+
+Defaults to C<localhost>.
+
+=item ListenPort
+
+Defaults to C<9514>, this is the port that clients can connect to request
+subscriptions from the service.
+
+=item GraphitePort
+
+Defaults to C<2003>, this is the port to submit graphite metrics from the
+daemon.
+
+=item GraphitePrefix
+
+Defaults to C<eris.dispatcher>, all generated metrics will use this prefix.
+
+=item GraphiteHost
+
+This parameter is required to enable the graphite output.  Without it, metrics
+will not be sent anywhere.
+
+=item MaxLineLength
+
+Defaults to C<16384>, this does not truncate log lines, but anytime a line
+exceeds this length the line will immediately be flushed from the buffer.
+
+This only affects multi-line logging as multi-line logs longer than this
+setting will be split up into more than one message.
+
+=back
 
 =cut
 
@@ -144,6 +178,7 @@ sub spawn {
         ListenPort      => 9514,
         GraphitePort    => 2003,
         GraphitePrefix  => 'eris.dispatcher',
+        MaxLineLength   => 16384,
         @_
     );
 
@@ -332,6 +367,8 @@ Based on clients connected and their feed settings, distribute this message
 sub dispatch_message {
     my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
 
+    # Clear the timer
+    $kernel->delay( 'dispatch_message' );
     _dispatch_messages($kernel, $heap, [$msg]);
 }
 
@@ -353,14 +390,42 @@ sub _dispatch_messages {
     my $dispatched = 0;
     my $bytes = 0;
 
-    # Handle fullfeeds
-    foreach my $sid ( keys %{ $heap->{full} } ) {
-        push @{ $heap->{buffers}{$sid} }, @$msgs;
-        $dispatched += @$msgs;
-        $bytes += length $_ for @$msgs;
+    # Handle Multiline data
+    my @entries = ();
+    my $entry = exists $heap->{buffered} ? delete $heap->{buffered} : '';
+    foreach my $line ( @$msgs ) {
+        if( $line && $line =~ /^\s+/ ) {
+            $entry = join "\n", grep { defined && length } ($entry,$line);
+        }
+        else {
+            push @entries, $entry if $entry;
+            $entry = $line;
+        }
+    }
+    if( $entry ) {
+        if( length($entry) >= $heap->{config}{MaxLineLength} ) {
+            # Clear the buffer, lines are too long
+            push @entries, $entry;
+        }
+        else {
+            # stash the last line
+            $heap->{buffered} = $entry if $entry;
+            # We might ned to flush this entry
+            $kernel->delay( dispatch_message => 1 );
+        }
     }
 
-    foreach my $msg ( @$msgs ) {
+    # If there's no logs, do nothing
+    return unless @entries;
+
+    # Handle fullfeeds
+    foreach my $sid ( keys %{ $heap->{full} } ) {
+        push @{ $heap->{buffers}{$sid} }, @entries;
+        $dispatched += @entries;
+        $bytes += length $_ for @entries;
+    }
+
+    foreach my $msg ( @entries ) {
         # Grab statitics;
         $heap->{stats}{received}++;
         $heap->{stats}{received_bytes} += length $msg;
@@ -402,7 +467,7 @@ sub _dispatch_messages {
             my %hit = ();
             foreach my $sid (keys %{ $heap->{regex} } ) {
                 foreach my $re ( keys %{ $heap->{regex}{$sid} } ) {
-                    if( $hit{$re} || $msg =~ /$re/ ) {
+                    if( $hit{$re} || $msg =~ /$re/m ) {
                         $hit{$re} = 1;
                         push @{ $heap->{buffers}{$sid} }, $msg;
                         $dispatched++;

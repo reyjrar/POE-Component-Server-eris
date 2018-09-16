@@ -14,12 +14,12 @@ use POE qw(
 #--------------------------------------------------------------------------#
 # Process Arguments
 my ($opt,$usage) = describe_options( '%c - %o',
-    ['eris-listen|el:s', "Address to listen for eris clients, default: 127.0.0.1", { default => '127.0.0.1' } ],
-    ['eris-port|ep:i',   "TCP port to listen for incoming syslog, default 9514", { default => 9514 } ],
+    ['eris-listen|el=s', "Address to listen for eris clients, default: 127.0.0.1", { default => '127.0.0.1' } ],
+    ['eris-port|ep=i',   "TCP port to listen for incoming syslog, default 9514", { default => 9514 } ],
     [],
-    ['graphite-host|g:s',  "Host to use to submit graphite metrics, default: disabled" ],
-    ['graphite-port|gp:i', "Port for graphite metric submission, default: 2003", {default => 2003} ],
-    ['graphite-prefix:s',  "Graphite prefix for metrics, default from POE::Component::Server::eris"],
+    ['graphite-host|g=s',  "Host to use to submit graphite metrics, default: disabled" ],
+    ['graphite-port|gp=i', "Port for graphite metric submission, default: 2003", {default => 2003} ],
+    ['graphite-prefix=s',  "Graphite prefix for metrics, default from POE::Component::Server::eris"],
     [],
     ['help',       "Show this message and exit.", { shortcircuit => 1 } ],
 );
